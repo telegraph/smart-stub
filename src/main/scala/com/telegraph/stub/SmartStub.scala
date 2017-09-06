@@ -33,7 +33,7 @@ abstract class SmartStub {
 
 
   // configure port, canned responses, swagger, state
-  def configureStub(inputPort: Int, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String): Unit = {
+  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String): Unit = {
     // port
     var port: Int = 8080
     if (inputPort != null)
@@ -50,7 +50,7 @@ abstract class SmartStub {
     }
     StubState.currentState = openingState
 
-    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile running on port $port in state $openingState")
+    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile running on port $port in opening state $openingState")
   }
 
 
