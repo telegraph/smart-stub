@@ -1,4 +1,4 @@
-package com.telegraph.stub.identity
+package com.telegraph.stub
 
 import com.github.tomakehurst.wiremock.{WireMockServer}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
