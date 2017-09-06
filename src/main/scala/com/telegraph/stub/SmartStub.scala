@@ -20,7 +20,7 @@ import scala.io.Source
   * 
   */
 
-abstract class BaseStub {
+abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
