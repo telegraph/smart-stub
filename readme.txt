@@ -1,31 +1,35 @@
 Build instructions
 ------------------
 sbt reload clean assembly
-docker build -t stubserver .
-docker run -p 8080:8081 stubserver
 
-
-Example
--------
-http://localhost:8080/identity/tokens
-with body:
-{
-    "grant_type": "password",
-    "credential_type": "EMAIL_PASSWORD",
-    "identifier": "user.email@telegraph.co.uk",
-    "auth_key": "user.password",
-    "client_id": "tcuk",
-    "remember_me": false
-}
 
 Usage
 -----
-Engineers should only need to change MyStub.scala which sets up the mocks and configures:
-- port for stub
-- canned responses location
-- swagger file
-- state model file
-- opening state
+
+Engineers should create a class (e.g. MyStub) extending SmartStub and add the follwoing
+
+1) Add a driver method:
+
+   def main(args : Array[String]) {
+      // port, canned file directory, swagger file, state model file, opening state
+      MyStub.configureStub(args(0).toInt, args(1), args(2), args(3), "registered")
+      MyStub.start
+   }
+
+2) Add wiremock stub methods:
+
+    override def setUpMocks(cannedResponsesPath: String): Unit  = {
+
+        wireMockServer.stubFor(post(urlMatching(".*/hello"))
+         .willReturn(
+           aResponse()
+             .withHeader("Content-Type", "application/json")
+             .withBody("""{"hello":"world"}""")
+             .withStatus(200)))
+
+        ...
+    }
+
 
 N.B. You should run your acceptance tests against the stub as well as the real service
 to further improve the validity of the stub, as well as validating the test requests
@@ -36,5 +40,3 @@ Errors
 An invalid request payload will return a 500 with an error
 An invalid response (from the stub) will also result in a 500 with an error
 An invalid state transition will (you guessed it) return a 500 with an error
-
-
