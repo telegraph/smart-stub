@@ -6,7 +6,7 @@ sbt reload clean assembly
 Usage
 -----
 
-Engineers should create a class (e.g. MyStub) extending SmartStub and add the follwoing
+Engineers should create an Object (e.g. MyStub.scala) extending SmartStub and add the following
 
 1) Add a driver method:
 
@@ -34,6 +34,7 @@ Engineers should create a class (e.g. MyStub) extending SmartStub and add the fo
 N.B. You should run your acceptance tests against the stub as well as the real service
 to further improve the validity of the stub, as well as validating the test requests
 against swagger.
+
 
 Errors
 ------
