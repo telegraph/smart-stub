@@ -13,4 +13,4 @@ lazy val root = (project in file(".")).
       "com.atlassian.oai" % "swagger-request-validator-wiremock" % "1.2.1",
       "org.json4s" %% "json4s-jackson" % "3.5.3"
     )
-  )
+  ) 
