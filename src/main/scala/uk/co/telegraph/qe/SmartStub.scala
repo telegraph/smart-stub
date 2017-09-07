@@ -1,4 +1,4 @@
-package com.telegraph.stub
+package uk.co.telegraph.qe
 
 import com.github.tomakehurst.wiremock.{WireMockServer}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
