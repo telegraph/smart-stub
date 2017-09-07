@@ -14,7 +14,7 @@ lazy val root = (project in file(".")).
       "com.atlassian.oai" % "swagger-request-validator-wiremock" % "1.2.1",
       "org.json4s" %% "json4s-jackson" % "3.5.3"
     ),
-    publishMavenStyle := false
+    publishMavenStyle := true
   )
 
 resolvers += "mvn-tmg-resolver" at "s3://s3-eu-west-1.amazonaws.com/mvn-artifacts/release"
