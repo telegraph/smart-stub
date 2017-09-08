@@ -8,7 +8,7 @@ sbt publish  // publish jar to s3
 ## Usage
 Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub and then adds the following:
 
-###A driver method
+### A driver method
 ```
    def main(args : Array[String]) {
       // port, canned responses directory, swagger json file, state model file, opening state
@@ -51,13 +51,13 @@ The state model json will be of the following format:
 
    where 'action' is the rest action
 ```
-##Errors
+## Errors
 * An invalid request payload will return a 500 with an error
 * An invalid response (from the stub) will also result in a 500 with an error
 * An invalid state transition will (you guessed it) return a 500 with an error
 
 
-##Test Design
+## Test Design
 You should run your acceptance tests against the stub as well as the real service
 to further improve the validity of the stub, as well as validating the test requests
 against swagger.
