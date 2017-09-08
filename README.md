@@ -66,7 +66,7 @@ The state model and the swagger schema should be common across the application a
 
 ## License
 
-This project is licensed under the APACHE License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the APACHE License - see the LICENSE file for details
 
 ## Acknowledgments
 
