@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
 import com.github.tomakehurst.wiremock.common.FileSource
+import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
 import com.github.tomakehurst.wiremock.http.Response
 import com.github.tomakehurst.wiremock.stubbing.Scenario
@@ -25,7 +26,6 @@ abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
-  private var stubNextState = new Scenario(Scenario.STARTED)
   private var stubPrevState = ""
   private object StubModel{
     var stateModelJson:JValue=null
@@ -39,7 +39,7 @@ abstract class SmartStub {
     if (inputPort != null)
       port = inputPort.toInt
 
-    wireMockServer = new WireMockServer(options().port(port).extensions(ContractValidationTransformer))
+    wireMockServer = new WireMockServer(options().port(port).extensions(ContractValidationTransformer, new ResponseTemplateTransformer(true)))
     wireMockListener = new SwaggerValidationListener(Source.fromFile(swaggerFile).mkString)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
     setUpMocks(cannedResponsesPath)
@@ -94,16 +94,16 @@ abstract class SmartStub {
           if (preState==null || postState==null) {
             throw new Exception("State model not in correct format")
           }
-          // get current state for this resource
-          if (stubPrevState==preState && parameters.getString("nextState")==postState){
-            stubPrevState=stubNextState.getState
-            stateTransitionIsValid=true
+          // get current state for this resource if required
+          if (!stateTransitionIsValid && stubPrevState==preState && parameters.getString("nextState")==postState){
+              stubPrevState=postState
+              stateTransitionIsValid=true
           }
         }
         if (!stateTransitionIsValid) {
           return Response.Builder.like(response)
             .but()
-            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + stubNextState.getState)
+            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString("nextState"))
             .status(500)
             .build();
         }

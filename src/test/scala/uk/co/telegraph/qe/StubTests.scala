@@ -5,16 +5,10 @@ import java.util
 
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching}
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
-import com.github.tomakehurst.wiremock.client.WireMock._
-import org.apache.http.NameValuePair
-import org.apache.http.client.entity.UrlEncodedFormEntity
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.params.HttpConnectionParams
 
-import scala.io.Source
 
 /**
   * Created by toorap on 12/09/2017.
@@ -60,6 +54,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "moving")
+            .withBody("""{"response":"{{request.path}}"}""")
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
@@ -67,13 +62,15 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "reversing")
+            .withBody("""{"response":"look out"}""")
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
         .withRequestBody(equalToJson("{\"action\":\"stop\"}",true,true))
         .willReturn(
           aResponse()
-            .withTransformerParameter("nextState", "stopped")
+            .withTransformerParameter("nextState", "idle")
+            .withBody("""{"response":"breaking"}""")
             .withStatus(200)));
     }
 

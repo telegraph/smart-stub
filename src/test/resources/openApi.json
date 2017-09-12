@@ -10,7 +10,10 @@
         "description": "",
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/response"
+            }
           }
         },
         "parameters": [
@@ -31,6 +34,14 @@
       "type": "object",
       "properties": {
         "action": {
+          "type": "string"
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "response": {
           "type": "string"
         }
       }
