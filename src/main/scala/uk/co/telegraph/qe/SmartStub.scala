@@ -27,8 +27,9 @@ abstract class SmartStub {
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
   private var stubPrevState = ""
-  private object StubModel{
-    var stateModelJson:JValue=null
+  private object StubModel {
+    var stateModelJson: JValue = null
+  }
 
 
   // configure port, canned responses, swagger, opening state
