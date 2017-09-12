@@ -29,10 +29,9 @@ abstract class SmartStub {
   private var stubPrevState = ""
   private object StubModel{
     var stateModelJson:JValue=null
-  }
 
 
-  // configure port, canned responses, swagger, state
+  // configure port, canned responses, swagger, opening state
   def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String): Unit = {
     // port
     var port: Int = 8080
@@ -84,7 +83,7 @@ abstract class SmartStub {
         wireMockListener.assertValidationPassed() // will throw error
 
         var stateTransitionIsValid=false
-        // validate state transition
+        // validate state transition if required
         if (parameters.getString("nextState")=="any") {
           stateTransitionIsValid=true
         } else {
