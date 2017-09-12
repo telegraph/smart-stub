@@ -83,21 +83,25 @@ abstract class SmartStub {
         wireMockListener.requestReceived(request, response)
         wireMockListener.assertValidationPassed() // will throw error
 
-        // validate state transition
         var stateTransitionIsValid=false
-        for {
-          JObject(rec) <- StubModel.stateModelJson
-          JField("prestate", JString(preState)) <- rec
-          JField("poststate", JString(postState)) <- rec
-        } {
+        // validate state transition
+        if (parameters.getString("nextState")=="any") {
+          stateTransitionIsValid=true
+        } else {
+          for {
+            JObject(rec) <- StubModel.stateModelJson
+            JField("prestate", JString(preState)) <- rec
+            JField("poststate", JString(postState)) <- rec
+          } {
 
-          if (preState==null || postState==null) {
-            throw new Exception("State model not in correct format")
-          }
-          // get current state for this resource if required
-          if (!stateTransitionIsValid && stubPrevState==preState && parameters.getString("nextState")==postState){
-              stubPrevState=postState
-              stateTransitionIsValid=true
+            if (preState == null || postState == null) {
+              throw new Exception("State model not in correct format")
+            }
+            // get current state for this resource if required
+            if (!stateTransitionIsValid && stubPrevState == preState && parameters.getString("nextState") == postState) {
+              stubPrevState = postState
+              stateTransitionIsValid = true
+            }
           }
         }
         if (!stateTransitionIsValid) {
