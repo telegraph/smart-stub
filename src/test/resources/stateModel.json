@@ -1,0 +1,20 @@
+{
+  "stateTransitions": [
+    {
+      "prestate": "idle",
+      "poststate": "moving"
+    },
+    {
+      "prestate": "idle",
+      "poststate": "reversing"
+    },
+    {
+      "prestate": "moving",
+      "poststate": "idle"
+    },
+    {
+      "prestate": "reversing",
+      "poststate": "idle"
+    }
+  ]
+}

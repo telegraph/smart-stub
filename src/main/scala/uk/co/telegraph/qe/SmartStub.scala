@@ -1,11 +1,13 @@
 package uk.co.telegraph.qe
 
-import com.github.tomakehurst.wiremock.{WireMockServer}
+import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.common.{FileSource}
+import com.github.tomakehurst.wiremock.common.FileSource
+import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
-import com.github.tomakehurst.wiremock.http.{Response}
+import com.github.tomakehurst.wiremock.http.Response
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.json4s.{JValue, _}
 import org.json4s.jackson.JsonMethods._
 
@@ -24,9 +26,7 @@ abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
-  private object StubState{
-    var currentState:String=""
-  }
+  private var stubPrevState = ""
   private object StubModel{
     var stateModelJson:JValue=null
   }
@@ -39,7 +39,7 @@ abstract class SmartStub {
     if (inputPort != null)
       port = inputPort.toInt
 
-    wireMockServer = new WireMockServer(options().port(port).extensions(ContractValidationTransformer))
+    wireMockServer = new WireMockServer(options().port(port).extensions(ContractValidationTransformer, new ResponseTemplateTransformer(true)))
     wireMockListener = new SwaggerValidationListener(Source.fromFile(swaggerFile).mkString)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
     setUpMocks(cannedResponsesPath)
@@ -48,7 +48,7 @@ abstract class SmartStub {
     if (StubModel.stateModelJson==null) {
       throw new Exception("State model not in correct format")
     }
-    StubState.currentState = openingState
+    stubPrevState = openingState
 
     println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile running on port $port in opening state $openingState")
   }
@@ -83,30 +83,34 @@ abstract class SmartStub {
         wireMockListener.requestReceived(request, response)
         wireMockListener.assertValidationPassed() // will throw error
 
-        // validate state
-        var nextState:String = null
-        for {
-          JObject(rec) <- StubModel.stateModelJson
-          JField("action", JString(action)) <- rec
-          JField("prestate", JString(preState)) <- rec
-          JField("poststate", JString(postState)) <- rec
-        } {
-          if (action==null || preState==null || postState==null) {
-            throw new Exception("State model not in correct format")
-          }
-          if (request.getMethod.getName.equalsIgnoreCase(action) &&
-            StubState.currentState.equalsIgnoreCase(preState)) {
-            nextState = postState
+        var stateTransitionIsValid=false
+        // validate state transition
+        if (parameters.getString("nextState")=="any") {
+          stateTransitionIsValid=true
+        } else {
+          for {
+            JObject(rec) <- StubModel.stateModelJson
+            JField("prestate", JString(preState)) <- rec
+            JField("poststate", JString(postState)) <- rec
+          } {
+
+            if (preState == null || postState == null) {
+              throw new Exception("State model not in correct format")
+            }
+            // get current state for this resource if required
+            if (!stateTransitionIsValid && stubPrevState == preState && parameters.getString("nextState") == postState) {
+              stubPrevState = postState
+              stateTransitionIsValid = true
+            }
           }
         }
-        if (nextState==null) {
+        if (!stateTransitionIsValid) {
           return Response.Builder.like(response)
             .but()
-            .body("Invalid state transition for " + request.getMethod.getName + " from state " + StubState.currentState)
+            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString("nextState"))
             .status(500)
             .build();
         }
-        StubState.currentState = nextState
 
         // otherwise just act as if nothing happened
         return response
@@ -123,7 +127,7 @@ abstract class SmartStub {
       }
     }
 
-    override def getName: String = "validate-contract-request"
+    override def getName: String = "state"
   }
 
 }
