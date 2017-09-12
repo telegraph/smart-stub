@@ -1,11 +1,12 @@
 package uk.co.telegraph.qe
 
-import com.github.tomakehurst.wiremock.{WireMockServer}
+import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.common.{FileSource}
+import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
-import com.github.tomakehurst.wiremock.http.{Response}
+import com.github.tomakehurst.wiremock.http.Response
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.json4s.{JValue, _}
 import org.json4s.jackson.JsonMethods._
 
@@ -24,9 +25,8 @@ abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
-  private object StubState{
-    var currentState:String=""
-  }
+  private var stubNextState = new Scenario(Scenario.STARTED)
+  private var stubPrevState = ""
   private object StubModel{
     var stateModelJson:JValue=null
   }
@@ -48,7 +48,7 @@ abstract class SmartStub {
     if (StubModel.stateModelJson==null) {
       throw new Exception("State model not in correct format")
     }
-    StubState.currentState = openingState
+    stubPrevState = openingState
 
     println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile running on port $port in opening state $openingState")
   }
@@ -83,30 +83,30 @@ abstract class SmartStub {
         wireMockListener.requestReceived(request, response)
         wireMockListener.assertValidationPassed() // will throw error
 
-        // validate state
-        var nextState:String = null
+        // validate state transition
+        var stateTransitionIsValid=false
         for {
           JObject(rec) <- StubModel.stateModelJson
-          JField("action", JString(action)) <- rec
           JField("prestate", JString(preState)) <- rec
           JField("poststate", JString(postState)) <- rec
         } {
-          if (action==null || preState==null || postState==null) {
+
+          if (preState==null || postState==null) {
             throw new Exception("State model not in correct format")
           }
-          if (request.getMethod.getName.equalsIgnoreCase(action) &&
-            StubState.currentState.equalsIgnoreCase(preState)) {
-            nextState = postState
+          // get current state for this resource
+          if (stubPrevState==preState && parameters.getString("nextState")==postState){
+            stubPrevState=stubNextState.getState
+            stateTransitionIsValid=true
           }
         }
-        if (nextState==null) {
+        if (!stateTransitionIsValid) {
           return Response.Builder.like(response)
             .but()
-            .body("Invalid state transition for " + request.getMethod.getName + " from state " + StubState.currentState)
+            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + stubNextState.getState)
             .status(500)
             .build();
         }
-        StubState.currentState = nextState
 
         // otherwise just act as if nothing happened
         return response
@@ -123,7 +123,7 @@ abstract class SmartStub {
       }
     }
 
-    override def getName: String = "validate-contract-request"
+    override def getName: String = "state"
   }
 
 }

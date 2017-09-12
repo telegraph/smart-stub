@@ -1,0 +1,39 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "0.0.1"
+  },
+  "basePath": "",
+  "paths": {
+    "/cars": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/body"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "body": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
