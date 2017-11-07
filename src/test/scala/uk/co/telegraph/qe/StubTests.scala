@@ -5,6 +5,7 @@ import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 import org.apache.http.client.methods.{CloseableHttpResponse, HttpPost}
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.{CloseableHttpClient, DefaultHttpClient}
+import org.apache.http.util.EntityUtils
 
 /**
   * Created by toorap on 12/09/2017.
@@ -13,7 +14,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
   val url = "http://localhost:8089/cars"
 
-  feature("The user can pop an element off the top of the stack") {
+  feature("Basic test scenarios for SmartStub") {
 
     info("As a driver")
     info("I want to be able to use the car")
@@ -37,9 +38,36 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         val response = doPost(url, """{"action":"stop"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("breaking")
     }
 
-    scenario("bad request") {
+
+    scenario("happy path with primed response") {
+
+      Given("the car is moving")
+        var response = doPost(url, """{"action":"drive"}""")
+        response = doPost(url+"/primeresponse",  """{"response":"stopping"}""")
+      When("when i stop it")
+        response = doPost(url, """{"action":"stop"}""")
+      Then("it will move")
+        response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("stopping")
+    }
+
+    scenario("bad swagger with primed response") {
+
+      Given("the car is moving")
+      var response = doPost(url, """{"action":"drive"}""")
+      response = doPost(url+"/primeresponse",  """{"response":false}""")
+      When("when i stop it")
+      response = doPost(url, """{"action":"stop"}""")
+      Then("it will move")
+      response.getStatusLine.getStatusCode should equal (500)
+    }
+
+    scenario("bad request as per swagger") {
 
       Given("the car is idle")
       // already
@@ -49,7 +77,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       response.getStatusLine.getStatusCode should equal (500)
     }
 
-    scenario("bad response") {
+    scenario("bad response as per swagger") {
 
       Given("the car is idle")
         //

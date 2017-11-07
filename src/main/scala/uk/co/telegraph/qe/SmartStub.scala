@@ -3,10 +3,11 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
-import com.github.tomakehurst.wiremock.http.Response
+import com.github.tomakehurst.wiremock.http.{Fault, HttpHeaders, Response}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.json4s.{JValue, _}
 import org.json4s.jackson.JsonMethods._
@@ -30,6 +31,9 @@ abstract class SmartStub {
   private object StubModel {
     var stateModelJson: JValue = null
   }
+  private object PrimedResponse {
+       var primedResponse = ""
+  }
 
 
   // configure port, canned responses, swagger, opening state
@@ -39,10 +43,21 @@ abstract class SmartStub {
     if (inputPort != null)
       port = inputPort.toInt
 
-    wireMockServer = new WireMockServer(options().port(port).extensions(ContractValidationTransformer, new ResponseTemplateTransformer(true)))
+    wireMockServer = new WireMockServer(options().port(port).extensions(
+      ContractValidationTransformer,
+      PrimedResponseTransformer,
+      new ResponseTemplateTransformer(true)))
     wireMockListener = new SwaggerValidationListener(Source.fromFile(swaggerFile).mkString)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
+
     setUpMocks(cannedResponsesPath)
+
+    wireMockServer.stubFor(post(urlMatching(".*/primeresponse"))
+      .willReturn(
+        aResponse()
+          .withBody("primed")
+          .withStatus(200)));
+
     implicit val formats = DefaultFormats
     StubModel.stateModelJson = parse(Source.fromFile(stateModelFile).mkString) \ "stateTransitions"
     if (StubModel.stateModelJson==null) {
@@ -79,8 +94,18 @@ abstract class SmartStub {
       try {
         wireMockListener.reset()
 
+        // check for primed response
+        var myResponse = response;
+        if (PrimedResponse.primedResponse=="") {
+          myResponse = response
+        } else {
+          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponse,
+            response.getHeaders, response.wasConfigured(), response.getFault, response.isFromProxy)
+          PrimedResponse.primedResponse=""
+        }
+
         // validate swagger
-        wireMockListener.requestReceived(request, response)
+        wireMockListener.requestReceived(request, myResponse)
         wireMockListener.assertValidationPassed() // will throw error
 
         var stateTransitionIsValid=false
@@ -105,7 +130,7 @@ abstract class SmartStub {
           }
         }
         if (!stateTransitionIsValid) {
-          return Response.Builder.like(response)
+          return Response.Builder.like(myResponse)
             .but()
             .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString("nextState"))
             .status(500)
@@ -113,7 +138,7 @@ abstract class SmartStub {
         }
 
         // otherwise just act as if nothing happened
-        return response
+        return myResponse
 
       } catch {
         case ex: Exception => {
@@ -128,6 +153,22 @@ abstract class SmartStub {
     }
 
     override def getName: String = "state"
+  }
+
+
+  // prime next response
+  private object PrimedResponseTransformer extends ResponseTransformer {
+
+    override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
+                            files: FileSource, parameters: Parameters): Response = {
+
+      if (request.getAbsoluteUrl.endsWith("primeresponse")) {
+        PrimedResponse.primedResponse = request.getBodyAsString
+      }
+      return response
+    }
+
+    override def getName: String = "response"
   }
 
 }
