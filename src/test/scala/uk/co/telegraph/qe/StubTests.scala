@@ -20,7 +20,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     info("I want to be able to use the car")
     info("So that I can get from a to b")
 
-    scenario("happy path with templated response") {
+    scenario("happy happy path canned response") {
 
       Given("the car is idle")
         MyStub.configureAndStart()
@@ -43,28 +43,34 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
 
 
-    scenario("happy path with primed response") {
+    scenario("happy path with multiple primed responses") {
 
-      Given("the car is moving")
-        var response = doPost(url, """{"action":"drive"}""")
-        response = doPost(url+"/primeresponse",  """{"response":"stopping"}""")
+      Given("the car is moving and i prime responses")
+        doPost(url, """{"action":"drive"}""")
+        doPost(url+"/primeresponse",  """{"response":"breeeeak"}""")
+        doPost(url+"/primeresponse",  """{"response":"zooom"}""")
       When("when i stop it")
-        response = doPost(url, """{"action":"stop"}""")
-      Then("it will move")
+        var response = doPost(url, """{"action":"stop"}""")
+      Then("it will breeeeak")
         response.getStatusLine.getStatusCode should equal (200)
-        val responsePayloadString = EntityUtils.toString(response.getEntity)
-        responsePayloadString should include ("stopping")
+        var responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("breeeeak")
+      And("when I drive it it will zoom")
+        response = doPost(url, """{"action":"drive"}""")
+        responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("zooom")
     }
 
     scenario("bad swagger with primed response") {
 
       Given("the car is moving")
-      var response = doPost(url, """{"action":"drive"}""")
-      response = doPost(url+"/primeresponse",  """{"response":false}""")
+        doPost(url, """{"action":"stop"}""")
+        var response = doPost(url, """{"action":"drive"}""")
+        response = doPost(url+"/primeresponse",  """{"response":false}""")
       When("when i stop it")
-      response = doPost(url, """{"action":"stop"}""")
+        response = doPost(url, """{"action":"stop"}""")
       Then("it will move")
-      response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (500)
     }
 
     scenario("bad request as per swagger") {
@@ -77,7 +83,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       response.getStatusLine.getStatusCode should equal (500)
     }
 
-    scenario("bad response as per swagger") {
+    scenario("bad response as per swagger from canned response") {
 
       Given("the car is idle")
         //
@@ -116,7 +122,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "moving")
-            .withBody("""{"response":"{{request.path}}"}""")
+            .withBody("""{"response":"{{request.path}}"}""")    // templated example
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))

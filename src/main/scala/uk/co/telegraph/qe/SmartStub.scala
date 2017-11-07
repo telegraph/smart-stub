@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.json4s.{JValue, _}
 import org.json4s.jackson.JsonMethods._
 
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 /**
@@ -32,8 +33,9 @@ abstract class SmartStub {
     var stateModelJson: JValue = null
   }
   private object PrimedResponse {
-       var primedResponse = ""
+       var primedResponses = new  ListBuffer[String]()
   }
+  val PRIMED_RESPONSE_URL = "primeresponse"
 
 
   // configure port, canned responses, swagger, opening state
@@ -43,6 +45,7 @@ abstract class SmartStub {
     if (inputPort != null)
       port = inputPort.toInt
 
+    // attach transformers
     wireMockServer = new WireMockServer(options().port(port).extensions(
       ContractValidationTransformer,
       PrimedResponseTransformer,
@@ -50,9 +53,9 @@ abstract class SmartStub {
     wireMockListener = new SwaggerValidationListener(Source.fromFile(swaggerFile).mkString)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
 
+    // add mocks
     setUpMocks(cannedResponsesPath)
-
-    wireMockServer.stubFor(post(urlMatching(".*/primeresponse"))
+    wireMockServer.stubFor(post(urlMatching(s".*/$PRIMED_RESPONSE_URL"))
       .willReturn(
         aResponse()
           .withBody("primed")
@@ -96,12 +99,12 @@ abstract class SmartStub {
 
         // check for primed response
         var myResponse = response;
-        if (PrimedResponse.primedResponse=="") {
+        if (PrimedResponse.primedResponses.length == 0 || request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
           myResponse = response
         } else {
-          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponse,
+          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponses.head,
             response.getHeaders, response.wasConfigured(), response.getFault, response.isFromProxy)
-          PrimedResponse.primedResponse=""
+          PrimedResponse.primedResponses.remove(0)
         }
 
         // validate swagger
@@ -162,8 +165,8 @@ abstract class SmartStub {
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
                             files: FileSource, parameters: Parameters): Response = {
 
-      if (request.getAbsoluteUrl.endsWith("primeresponse")) {
-        PrimedResponse.primedResponse = request.getBodyAsString
+      if (request.getAbsoluteUrl.endsWith(PRIMED_RESPONSE_URL)) {
+        PrimedResponse.primedResponses += request.getBodyAsString
       }
       return response
     }
