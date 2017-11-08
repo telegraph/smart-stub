@@ -35,7 +35,7 @@ abstract class SmartStub {
   private object PrimedResponse {
        var primedResponses = new  ListBuffer[String]()
   }
-  val PRIMED_RESPONSE_URL = "primeresponse"
+  val PRIMED_RESPONSE_URL = "/primeresponse"
 
 
   // configure port, canned responses, swagger, opening state
@@ -55,7 +55,7 @@ abstract class SmartStub {
 
     // add mocks
     setUpMocks(cannedResponsesPath)
-    wireMockServer.stubFor(post(urlMatching(s".*/$PRIMED_RESPONSE_URL"))
+    wireMockServer.stubFor(post(urlMatching(s".*$PRIMED_RESPONSE_URL"))
       .willReturn(
         aResponse()
           .withBody("primed")
