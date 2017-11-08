@@ -1,5 +1,10 @@
 ## Smart Stub
 
+The Smart Stub provides some powerful capabilites:
+* built-in swagger validation
+* built-in state transition validation
+* ability to prime responses
+
 # Build instructions
 
 sbt reload clean assembly   // build and run tests
