@@ -10,7 +10,7 @@ sbt publish                 // publish jar to s3
 ## Usage
 Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub and then adds the following:
 
-The repo contains StubTests whihc are a good guide.
+The repo contains StubTests which offer a good guide.
 
 ### A driver method
 ```
