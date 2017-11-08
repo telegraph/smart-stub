@@ -28,6 +28,8 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
          val response = doPost(url, """{"action":"drive"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("moving")
     }
 
     scenario("good state transition") {
@@ -124,7 +126,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "moving")
-            .withBody("""{"response":"{{request.path}}"}""")    // templated example
+            .withBody("""{"response":"moving"}""")    // templated example
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
