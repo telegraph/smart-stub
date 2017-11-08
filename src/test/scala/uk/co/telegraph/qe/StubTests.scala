@@ -102,6 +102,8 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         val response = doPost(url, """{"action":"reverse"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid state transition")
     }
   }
 
