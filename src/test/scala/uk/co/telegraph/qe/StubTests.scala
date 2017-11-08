@@ -67,12 +67,14 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
       Given("the car is moving")
         doPost(url, """{"action":"stop"}""")
-        var response = doPost(url, """{"action":"drive"}""")
-        response = doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":false}""")
+        doPost(url, """{"action":"drive"}""")
+        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":false}""")
       When("when i stop it")
-        response = doPost(url, """{"action":"stop"}""")
+        val response = doPost(url, """{"action":"stop"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
     }
 
     scenario("bad request as per swagger") {
@@ -83,6 +85,8 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       val response = doPost(url, """{"action":"stop","hello":"bye"}""")
       Then("it will move")
       response.getStatusLine.getStatusCode should equal (500)
+      val responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include ("Invalid contract")
     }
 
     scenario("bad response as per swagger from canned response") {
@@ -93,16 +97,30 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         val response = doPost(url, """{"action":"badresponse"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
     }
 
-    scenario("bad state transition") {
+    scenario("bad state transition for canned responses") {
 
-      Given("the car is idle")
-        //
-      When("when i move it")
+      Given("the car is moving")
         doPost(url, """{"action":"drive"}""")
+      When("when i reverse it")
         val response = doPost(url, """{"action":"reverse"}""")
-      Then("it will move")
+      Then("it will fail")
+        response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid state transition")
+    }
+
+    scenario("bad state transition for primed responses") {
+
+      Given("the car is moving")
+      // already
+      When("when i reverse it")
+        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"reversing"}""")
+        val response = doPost(url, """{"action":"reverse"}""")
+      Then("it will fail")
         response.getStatusLine.getStatusCode should equal (500)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid state transition")
