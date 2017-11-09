@@ -3,11 +3,11 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get, put, delete}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, delete, equalToJson, get, post, put, urlMatching}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
-import com.github.tomakehurst.wiremock.http.{Fault, HttpHeaders, Response}
+import com.github.tomakehurst.wiremock.http.{Fault, HttpHeaders, Request, Response}
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.json4s.{JValue, _}
 import org.json4s.jackson.JsonMethods._
@@ -33,7 +33,7 @@ abstract class SmartStub {
     var stateModelJson: JValue = null
   }
   private object PrimedResponse {
-       var primedResponses = new  ListBuffer[String]()
+       var primedResponses = new  ListBuffer[Request]()
   }
   val PRIMED_RESPONSE_URL = "/primeresponse"
 
@@ -55,7 +55,7 @@ abstract class SmartStub {
 
     // add mocks
     setUpMocks(cannedResponsesPath)
-    wireMockServer.stubFor(post(urlMatching(s".*$PRIMED_RESPONSE_URL"))
+    wireMockServer.stubFor(post(urlMatching(s".*$PRIMED_RESPONSE_URL.*"))
       .willReturn(
         aResponse()
           .withBody("primed")
@@ -96,19 +96,19 @@ abstract class SmartStub {
                             files: FileSource, parameters: Parameters): Response = {
 
       // if priming request ignore validation
-      if (request.getAbsoluteUrl.endsWith(PRIMED_RESPONSE_URL)) {
+      if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
         return response
       }
       try {
         wireMockListener.reset()
 
-        // check for primed response
+        // check for primed response, if exists then use it and remove it from the list
         var myResponse = response;
         if (PrimedResponse.primedResponses.length == 0) {
           myResponse = response
         } else {
-          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponses.head,
-            response.getHeaders, response.wasConfigured(), response.getFault, response.isFromProxy)
+          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponses.head.getBodyAsString,
+            PrimedResponse.primedResponses.head.getHeaders, response.wasConfigured(), response.getFault, response.isFromProxy)
           PrimedResponse.primedResponses.remove(0)
         }
 
@@ -171,8 +171,8 @@ abstract class SmartStub {
                             files: FileSource, parameters: Parameters): Response = {
 
       // if priming save response for later and add mock default
-      if (request.getAbsoluteUrl.endsWith(PRIMED_RESPONSE_URL)) {
-        PrimedResponse.primedResponses += request.getBodyAsString
+      if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
+        PrimedResponse.primedResponses += request
         wireMockServer.stubFor(post(urlMatching(".*"))
             .atPriority(1000)
             .willReturn(
