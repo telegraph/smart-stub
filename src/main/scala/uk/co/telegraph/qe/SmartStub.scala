@@ -3,7 +3,7 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get, put, delete}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
@@ -187,6 +187,20 @@ abstract class SmartStub {
                 .withTransformerParameter("nextState", "any")
                 .withBody("Should never see this response body")
                 .withStatus(200)))
+
+        wireMockServer.stubFor(put(urlMatching(".*"))
+          .atPriority(1002)
+          .willReturn(aResponse()
+            .withTransformerParameter("nextState", "any")
+            .withBody("Should never see this response body")
+            .withStatus(200)))
+
+        wireMockServer.stubFor(delete(urlMatching(".*"))
+          .atPriority(1003)
+          .willReturn(aResponse()
+            .withTransformerParameter("nextState", "any")
+            .withBody("Should never see this response body")
+            .withStatus(200)))
       }
       return response
     }
