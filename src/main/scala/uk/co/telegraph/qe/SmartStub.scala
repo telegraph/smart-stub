@@ -94,12 +94,17 @@ abstract class SmartStub {
 
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
                             files: FileSource, parameters: Parameters): Response = {
+
+      // if priming request ignore validation
+      if (request.getAbsoluteUrl.endsWith(PRIMED_RESPONSE_URL)) {
+        return response
+      }
       try {
         wireMockListener.reset()
 
         // check for primed response
         var myResponse = response;
-        if (PrimedResponse.primedResponses.length == 0 || request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
+        if (PrimedResponse.primedResponses.length == 0) {
           myResponse = response
         } else {
           myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponses.head,
