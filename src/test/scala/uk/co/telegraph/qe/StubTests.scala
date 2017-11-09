@@ -63,6 +63,18 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         responsePayloadString should include ("zooom")
     }
 
+    scenario("happy path with primed response with custom request where no mock exists") {
+
+      Given("the car is moving and i prime response for halt")
+        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"halted"}""")
+      When("when i halt it")
+        var response = doPost(url, """{"action":"halt"}""")
+      Then("it will halted")
+        response.getStatusLine.getStatusCode should equal (200)
+        var responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("halted")
+    }
+
     scenario("bad swagger with primed response") {
 
       Given("the car is moving")

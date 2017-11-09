@@ -3,7 +3,7 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
@@ -170,8 +170,23 @@ abstract class SmartStub {
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
                             files: FileSource, parameters: Parameters): Response = {
 
+      // if priming save response for later and add mock default
       if (request.getAbsoluteUrl.endsWith(PRIMED_RESPONSE_URL)) {
         PrimedResponse.primedResponses += request.getBodyAsString
+        wireMockServer.stubFor(post(urlMatching(".*"))
+            .atPriority(1000)
+            .willReturn(
+              aResponse()
+                .withTransformerParameter("nextState", "any")
+                .withBody("Should never see this response body")
+                .withStatus(200)));
+
+        wireMockServer.stubFor(get(urlMatching(".*"))
+              .atPriority(1001)
+              .willReturn(aResponse()
+                .withTransformerParameter("nextState", "any")
+                .withBody("Should never see this response body")
+                .withStatus(200)))
       }
       return response
     }
