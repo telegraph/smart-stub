@@ -1,8 +1,8 @@
 package uk.co.telegraph.qe
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get}
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
-import org.apache.http.client.methods.{CloseableHttpResponse, HttpPost}
+import org.apache.http.client.methods.{CloseableHttpResponse, HttpGet, HttpPost}
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.{CloseableHttpClient, DefaultHttpClient}
 import org.apache.http.util.EntityUtils
@@ -21,12 +21,24 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     info("I want to be able to use the car")
     info("So that I can get from a to b")
 
-    scenario("happy happy path canned response") {
+    scenario("happy GET with canned response") {
 
       Given("the car is idle")
         MyStub.configureAndStart()
+      When("when i get it")
+         val response = doGet(url)
+      Then("it will return the canned data")
+        response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("cars")
+    }
+
+    scenario("happy POST path with canned response") {
+
+      Given("the car is idle")
+        // already
       When("when i move it")
-         val response = doPost(url, """{"action":"drive"}""")
+        val response = doPost(url, """{"action":"drive"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (200)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
@@ -62,6 +74,19 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         response = doPost(url, """{"action":"drive"}""")
         responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("zooom")
+    }
+
+
+    scenario("happy get path primed response") {
+
+      Given("the i've primed a response")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"trucks"}""")
+      When("when i get it")
+        val response = doGet(url)
+      Then("it i will get trucks")
+        response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("trucks")
     }
 
     scenario("happy path with primed response with custom request where no mock exists") {
@@ -102,28 +127,40 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         responsePayloadString should include ("Invalid contract")
     }
 
-    scenario("sad path with primed response where status is not valid in swagger") {
+    scenario("sad POST path with primed response where status is not valid in swagger") {
 
       Given("the car is moving and i prime response for halt")
-      doPost(PRIMED_RESPONSE_URL_QUERY.replace("200","202"),  """{"response":"halted"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY.replace("200","202"),  """{"response":"halted"}""")
       When("when i halt it")
-      var response = doPost(url, """{"action":"halt"}""")
-      Then("it will halted")
-      response.getStatusLine.getStatusCode should equal (500)
-      val responsePayloadString = EntityUtils.toString(response.getEntity)
-      responsePayloadString should include ("Invalid contract")
+        var response = doPost(url, """{"action":"halt"}""")
+        Then("it will halted")
+        response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
+    }
+
+    scenario("sad GET path with primed response with invalid status") {
+
+      Given("the i've primed a response")
+        doPost(PRIMED_RESPONSE_URL_QUERY.replace("200","202"),  """{"response":"trucks"}""")
+      When("when i get it")
+        val response = doGet(url)
+      Then("it i will get trucks")
+        response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
     }
 
     scenario("bad request as per swagger") {
 
       Given("the car is idle")
-      // already
+        // already
       When("when i move it")
-      val response = doPost(url, """{"action":"stop","hello":"bye"}""")
+        val response = doPost(url, """{"action":"stop","hello":"bye"}""")
       Then("it will move")
-      response.getStatusLine.getStatusCode should equal (500)
-      val responsePayloadString = EntityUtils.toString(response.getEntity)
-      responsePayloadString should include ("Invalid contract")
+        response.getStatusLine.getStatusCode should equal (500)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
     }
 
     scenario("bad response as per swagger from canned response") {
@@ -170,18 +207,30 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     post.setEntity(new StringEntity(body))
     (new DefaultHttpClient).execute(post)
   }
+
+  def doGet(url:String): CloseableHttpResponse = {
+    val get = new HttpGet(url)
+    get.setHeader("Content-type", "application/json")
+    (new DefaultHttpClient).execute(get)
+  }
 }
 
   object MyStub extends SmartStub {
 
     override def setUpMocks(cannedResponsesPath: String): Unit  = {
 
+      wireMockServer.stubFor(get(urlMatching(".*/cars"))
+        .willReturn(
+          aResponse()
+            .withBody("""{"response":"cars"}""")
+            .withStatus(200)));
+
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
         .withRequestBody(equalToJson("{\"action\":\"drive\"}",true,true))
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "moving")
-            .withBody("""{"response":"moving"}""")    // templated example
+            .withBody("""{"response":"moving"}""")
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))

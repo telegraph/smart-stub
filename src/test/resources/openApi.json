@@ -32,6 +32,17 @@
             }
           }
         ]
+      },
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/response"
+            }
+          }
+        }
       }
     }
   },

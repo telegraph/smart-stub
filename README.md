@@ -50,10 +50,11 @@ The project contains StubTests.scala which offers an example of mocking and test
 
 ### Prime next response
 ```
-    doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"hello"}""")
+    doPost(url+MyStub.PRIMED_RESPONSE_URL+"?"+MyStub.RESPONSE_STATUS_QUERY_PARAM+"=200",  """{"response":"hello"}""")
     
-    The next call to this stub will return this rerquest's body and headers
-    You can create a series of responses by calling this multiple times
+    The next call to this stub will return this request's body and headers and the passed status
+    
+    You can create a series of responses by calling this multiple times and the stub will read FIFO
     
     Of course, if you have a wiremock handle, you can  add mock stubs on the fly using the wiremock API.
     
