@@ -13,6 +13,7 @@ import org.apache.http.util.EntityUtils
 class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
   val url = "http://localhost:8089/cars"
+  val PRIMED_RESPONSE_URL_QUERY = url+MyStub.PRIMED_RESPONSE_URL+"?"+MyStub.RESPONSE_STATUS_QUERY_PARAM+"=200"
 
   feature("Basic test scenarios for SmartStub") {
 
@@ -49,8 +50,8 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
       Given("the car is moving and i prime responses")
         doPost(url, """{"action":"drive"}""")
-        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"breeeeak"}""")
-        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"zooom"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"breeeeak"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"zooom"}""")
       When("when i stop it")
         var response = doPost(url, """{"action":"stop"}""")
       Then("it will breeeeak")
@@ -66,7 +67,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     scenario("happy path with primed response with custom request where no mock exists") {
 
       Given("the car is moving and i prime response for halt")
-        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"halted"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"halted"}""")
       When("when i halt it")
         var response = doPost(url, """{"action":"halt"}""")
       Then("it will halted")
@@ -75,18 +76,42 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         responsePayloadString should include ("halted")
     }
 
-    scenario("bad swagger with primed response") {
+    scenario("happy path with primed response with custom request where status is also injected") {
+
+      Given("the car is moving and i prime response for halt")
+      doPost(PRIMED_RESPONSE_URL_QUERY.replace("200","201"),  """{"response":"halted"}""")
+      When("when i halt it")
+      var response = doPost(url, """{"action":"halt"}""")
+      Then("it will halted")
+      response.getStatusLine.getStatusCode should equal (201)
+      var responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include ("halted")
+    }
+
+    scenario("sad path with primed response where response body not valid in swagger") {
 
       Given("the car is moving")
         doPost(url, """{"action":"stop"}""")
         doPost(url, """{"action":"drive"}""")
-        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":false}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":false}""")
       When("when i stop it")
         val response = doPost(url, """{"action":"stop"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (500)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
+    }
+
+    scenario("sad path with primed response where status is not valid in swagger") {
+
+      Given("the car is moving and i prime response for halt")
+      doPost(PRIMED_RESPONSE_URL_QUERY.replace("200","202"),  """{"response":"halted"}""")
+      When("when i halt it")
+      var response = doPost(url, """{"action":"halt"}""")
+      Then("it will halted")
+      response.getStatusLine.getStatusCode should equal (500)
+      val responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include ("Invalid contract")
     }
 
     scenario("bad request as per swagger") {
@@ -130,7 +155,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       Given("the car is moving")
       // already
       When("when i reverse it")
-        doPost(url+MyStub.PRIMED_RESPONSE_URL,  """{"response":"reversing"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"reversing"}""")
         val response = doPost(url, """{"action":"reverse"}""")
       Then("it will fail")
         response.getStatusLine.getStatusCode should equal (500)

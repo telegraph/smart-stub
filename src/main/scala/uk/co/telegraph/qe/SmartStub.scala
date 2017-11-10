@@ -33,9 +33,12 @@ abstract class SmartStub {
     var stateModelJson: JValue = null
   }
   private object PrimedResponse {
-       var primedResponses = new  ListBuffer[Request]()
+    var primedResponses = new  ListBuffer[com.github.tomakehurst.wiremock.http.Request]()
+    var primedResponseStatuses = new  ListBuffer[Int]()
   }
   val PRIMED_RESPONSE_URL = "/primeresponse"
+  val NEXT_STATE_PARAM = "nextState"
+  val RESPONSE_STATUS_QUERY_PARAM = "responseStatus"
 
 
   // configure port, canned responses, swagger, opening state
@@ -107,9 +110,14 @@ abstract class SmartStub {
         if (PrimedResponse.primedResponses.length == 0) {
           myResponse = response
         } else {
-          myResponse = new Response(response.getStatus, response.getStatusMessage, PrimedResponse.primedResponses.head.getBodyAsString,
-            PrimedResponse.primedResponses.head.getHeaders, response.wasConfigured(), response.getFault, response.isFromProxy)
+          myResponse = new Response(
+            PrimedResponse.primedResponseStatuses.head,
+            response.getStatusMessage,
+            PrimedResponse.primedResponses.head.getBodyAsString,
+            PrimedResponse.primedResponses.head.getHeaders,
+            response.wasConfigured(), response.getFault, response.isFromProxy)
           PrimedResponse.primedResponses.remove(0)
+          PrimedResponse.primedResponseStatuses.remove(0)
         }
 
         // validate swagger
@@ -118,7 +126,8 @@ abstract class SmartStub {
 
         var stateTransitionIsValid=false
         // validate state transition if required
-        if (parameters.getString("nextState")=="any") {
+
+        if (parameters==null || parameters.containsKey(NEXT_STATE_PARAM)==false || parameters.getString(NEXT_STATE_PARAM)=="any") {
           stateTransitionIsValid=true
         } else {
           for {
@@ -131,7 +140,7 @@ abstract class SmartStub {
               throw new Exception("State model not in correct format")
             }
             // get current state for this resource if required
-            if (!stateTransitionIsValid && stubPrevState == preState && parameters.getString("nextState") == postState) {
+            if (!stateTransitionIsValid && stubPrevState == preState && parameters.getString(NEXT_STATE_PARAM) == postState) {
               stubPrevState = postState
               stateTransitionIsValid = true
             }
@@ -140,7 +149,7 @@ abstract class SmartStub {
         if (!stateTransitionIsValid) {
           return Response.Builder.like(myResponse)
             .but()
-            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString("nextState"))
+            .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString(NEXT_STATE_PARAM))
             .status(500)
             .build();
         }
@@ -173,34 +182,18 @@ abstract class SmartStub {
       // if priming save response for later and add mock default
       if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
         PrimedResponse.primedResponses += request
+        PrimedResponse.primedResponseStatuses += request.queryParameter(RESPONSE_STATUS_QUERY_PARAM).values().get(0).toInt
         wireMockServer.stubFor(post(urlMatching(".*"))
-            .atPriority(1000)
-            .willReturn(
-              aResponse()
-                .withTransformerParameter("nextState", "any")
-                .withBody("Should never see this response body")
-                .withStatus(200)));
+            .atPriority(1000).willReturn(aResponse()))
 
         wireMockServer.stubFor(get(urlMatching(".*"))
-              .atPriority(1001)
-              .willReturn(aResponse()
-                .withTransformerParameter("nextState", "any")
-                .withBody("Should never see this response body")
-                .withStatus(200)))
+          .atPriority(1001).willReturn(aResponse()))
 
         wireMockServer.stubFor(put(urlMatching(".*"))
-          .atPriority(1002)
-          .willReturn(aResponse()
-            .withTransformerParameter("nextState", "any")
-            .withBody("Should never see this response body")
-            .withStatus(200)))
+          .atPriority(1002).willReturn(aResponse()))
 
         wireMockServer.stubFor(delete(urlMatching(".*"))
-          .atPriority(1003)
-          .willReturn(aResponse()
-            .withTransformerParameter("nextState", "any")
-            .withBody("Should never see this response body")
-            .withStatus(200)))
+          .atPriority(1003).willReturn(aResponse()))
       }
       return response
     }

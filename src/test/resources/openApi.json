@@ -14,6 +14,12 @@
             "schema": {
               "$ref": "#/definitions/response"
             }
+          },
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/response"
+            }
           }
         },
         "parameters": [
