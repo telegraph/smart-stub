@@ -20,8 +20,8 @@ lazy val root = (project in file(".")).
 resolvers += "mvn-tmg-resolver" at "s3://s3-eu-west-1.amazonaws.com/mvn-artifacts/release"
 publishTo := {
   if( isSnapshot.value ){
-    Some("mvn-tmg-publisher" at "s3://s33-eu-west-1.amazonaws.com/mvn-artifacts/snapshot")
+    Some("mvn-tmg-publisher" at "s3://s3-eu-west-1.amazonaws.com/mvn-artifacts/snapshot")
   }else{
-    Some("mvn-tmg-publisher" at "s3://s33-eu-west-1.amazonaws.com/mvn-artifacts/release")
+    Some("mvn-tmg-publisher" at "s3://s3-eu-west-1.amazonaws.com/mvn-artifacts/release")
   }
 }
