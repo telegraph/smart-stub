@@ -195,7 +195,6 @@ abstract class SmartStub {
         wireMockServer.stubFor(delete(urlMatching(".*"))
           .atPriority(1003).willReturn(aResponse()))
       }
-
       return response
     }
 
