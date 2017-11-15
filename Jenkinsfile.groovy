@@ -30,7 +30,7 @@ ansiColor('xterm') {
                         extensions                       : [
                                 [ $class: 'WipeWorkspace' ],
                                 [ $class: 'CleanBeforeCheckout' ],
-                                [ $class: 'LocalBranch', localBranch: 'origin/master' ]
+                                [ $class: 'LocalBranch', localBranch: 'master' ]
                         ],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : [[
@@ -38,6 +38,7 @@ ansiColor('xterm') {
                                                                     url          : "git@github.com:telegraph/${projectName}.git"
                                                             ]]
                 ]
+                sh """git branch --set-upstream-to=origin/master master"""
             }
 
             stage("Build & Unit Tests") {
