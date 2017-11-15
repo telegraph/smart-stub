@@ -5,8 +5,7 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "uk.co.telegraph.qe",
-      scalaVersion := "2.11.8",
-      version      := "0.8.1"
+      scalaVersion := "2.11.8"
     )),
     name := "SmartStub",
     libraryDependencies ++= Seq(
