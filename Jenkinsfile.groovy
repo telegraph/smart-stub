@@ -68,7 +68,7 @@ ansiColor('xterm') {
                     echo "GITHUB_COMMIT_MSG: \${GITHUB_COMMIT_MSG}"
                     echo "GITHUB_COMMIT_DONE: DONE"
                     
-                    C_DATA="{\\\"tag_name\\\": \\\"v${release_version}\\\",\\\"target_commitish\\\": \\\"master\\\",\\\"name\\\": \\\"${pipeline_version}\\\",\\\"body\\\": \${GITHUB_COMMIT_MSG},\\\"draft\\\": false,\\\"prerelease\\\": false}"
+                    C_DATA="{\\\"tag_name\\\": \\\"v${release_version}\\\",\\\"target_commitish\\\": \\\"master\\\",\\\"name\\\": \\\"${release_version}\\\",\\\"body\\\": \${GITHUB_COMMIT_MSG},\\\"draft\\\": false,\\\"prerelease\\\": false}"
                     echo "C_DATA: \${C_DATA}"
                     curl -H "Content-Type: application/json" -H "Authorization: token ${
                     github_token
