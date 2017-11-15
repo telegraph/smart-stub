@@ -48,6 +48,7 @@ ansiColor('xterm') {
                 """
                 )
                 project_version = sh(returnStdout: true, script: """${sbtFolder}/sbt --error 'export version'""").trim()
+                println("\n[TRACE] **** project_version ${project_version} ****")
             }
 
             stage("Release") {
@@ -59,17 +60,14 @@ ansiColor('xterm') {
             stage("Release Notes") {
                 // Possible error if there is a commit different from the trigger commit
                 github_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                release_version = sh(returnStdout: true, script: """${project_version} | sed  's/-SNAPSHOT//'""").trim()
+                release_version = sh(returnStdout: true, script: """echo ${project_version} | sed  's/-SNAPSHOT//'""").trim()
+                current_commit = sh(returnStdout: true, script: 'git show-ref --tags --head --hash| head -n1').trim()
+                previous_release_tag = sh(returnStdout: true, script: 'git show-ref --tags --head | sort -V -k2,2 | tail -n2 | head -n1 | cut -d " " -f1').trim()
+                release_message = sh(returnStdout: true, script: """git log --format=%B $previous_release_tag..$current_commit""").trim()
                 //Release on Git
                 println("\n[TRACE] **** Releasing to github ${github_token}, ${release_version}, ${github_commit} ****")
                 sh """#!/bin/bash
-                    GITHUB_COMMIT_MSG=\$(curl -H "Content-Type: application/json" -H "Authorization: token ${
-                    github_token
-                }" https://api.github.com/repos/telegraph/${projectName}/commits/\"${github_commit}\" | /usr/local/bin/jq \'.commit.message\')
-                    echo "GITHUB_COMMIT_MSG: \${GITHUB_COMMIT_MSG}"
-                    echo "GITHUB_COMMIT_DONE: DONE"
-                    
-                    C_DATA="{\\\"tag_name\\\": \\\"v${release_version}\\\",\\\"target_commitish\\\": \\\"master\\\",\\\"name\\\": \\\"${release_version}\\\",\\\"body\\\": \${GITHUB_COMMIT_MSG},\\\"draft\\\": false,\\\"prerelease\\\": false}"
+                    C_DATA="{\\\"tag_name\\\": \\\"v${release_version}\\\",\\\"target_commitish\\\": \\\"master\\\",\\\"name\\\": \\\"${release_version}\\\",\\\"body\\\": \\\"${release_message}\\\",\\\"draft\\\": false,\\\"prerelease\\\": false}"
                     echo "C_DATA: \${C_DATA}"
                     curl -H "Content-Type: application/json" -H "Authorization: token ${
                     github_token
