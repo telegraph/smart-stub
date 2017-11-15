@@ -27,11 +27,11 @@ ansiColor('xterm') {
                                                                     name: 'master'
                                                             ]],
                         doGenerateSubmoduleConfigurations: false,
-                        extensions                       : [[
-                                                                    $class: 'WipeWorkspace'
-                                                            ], [
-                                                                    $class: 'CleanBeforeCheckout'
-                                                            ]],
+                        extensions                       : [
+                                [ $class: 'WipeWorkspace' ],
+                                [ $class: 'CleanBeforeCheckout' ],
+                                [ $class: 'LocalBranch', localBranch: 'master' ]
+                        ],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : [[
                                                                     credentialsId: "${jenkins_github_id}",
