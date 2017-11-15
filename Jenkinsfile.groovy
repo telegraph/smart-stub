@@ -61,7 +61,7 @@ ansiColor('xterm') {
                 github_commit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
                 release_version = sh(returnStdout: true, script: """${project_version} | sed  's/-SNAPSHOT//'""").trim()
                 //Release on Git
-                println("\n[TRACE] **** Releasing to github ${github_token}, ${pipeline_version}, ${github_commit} ****")
+                println("\n[TRACE] **** Releasing to github ${github_token}, ${release_version}, ${github_commit} ****")
                 sh """#!/bin/bash
                     GITHUB_COMMIT_MSG=\$(curl -H "Content-Type: application/json" -H "Authorization: token ${
                     github_token
