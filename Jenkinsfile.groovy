@@ -51,7 +51,7 @@ ansiColor('xterm') {
 
             stage("Release") {
                 sh """
-                    ${sbtFolder}/sbt 'release skip-test with-defaults'
+                    ${sbtFolder}/sbt 'release skip-tests with-defaults'
                 """
             }
 
