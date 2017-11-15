@@ -30,7 +30,7 @@ ansiColor('xterm') {
                         extensions                       : [
                                 [ $class: 'WipeWorkspace' ],
                                 [ $class: 'CleanBeforeCheckout' ],
-                                [ $class: 'LocalBranch', localBranch: 'master' ]
+                                [ $class: 'LocalBranch', localBranch: 'origin/master' ]
                         ],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : [[
