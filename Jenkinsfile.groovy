@@ -63,7 +63,7 @@ ansiColor('xterm') {
                 release_version = sh(returnStdout: true, script: """echo ${project_version} | sed  's/-SNAPSHOT//'""").trim()
                 current_commit = sh(returnStdout: true, script: 'git show-ref --tags --head --hash| head -n1').trim()
                 previous_release_tag = sh(returnStdout: true, script: 'git show-ref --tags --head | sort -V -k2,2 | tail -n2 | head -n1 | cut -d " " -f1').trim()
-                release_message = sh(returnStdout: true, script: """git log --format=%B $previous_release_tag..$current_commit""").trim()
+                release_message = sh(returnStdout: true, script: """git log --format=%B $previous_release_tag..$current_commit | tr '\n' '\\\\n'""").trim()
                 //Release on Git
                 println("\n[TRACE] **** Releasing to github ${github_token}, ${release_version}, ${github_commit} ****")
                 sh """#!/bin/bash
