@@ -46,7 +46,7 @@ ansiColor('xterm') {
                   ${sbtFolder}/sbt clean test
                 """
                 )
-                project_version = sh(returnStdout: true, script: """sbt --error 'export version'""").trim()
+                project_version = sh(returnStdout: true, script: """${sbtFolder}/sbt --error 'export version'""").trim()
             }
 
             stage("Release") {
