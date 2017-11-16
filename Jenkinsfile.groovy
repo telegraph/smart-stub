@@ -1,3 +1,5 @@
+import groovy.json.*
+
 def sendNotification(action, token, channel, shellAction) {
     try {
         slackSend message: "${action} Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", token: token, channel: channel, teamDomain: "telegraph", baseUrl: "https://hooks.slack.com/services/", color: "warning"
@@ -63,15 +65,18 @@ ansiColor('xterm') {
                 release_version = sh(returnStdout: true, script: """echo ${project_version} | sed  's/-SNAPSHOT//'""").trim()
                 current_commit = sh(returnStdout: true, script: 'git show-ref --tags --head --hash| head -n1').trim()
                 previous_release_tag = sh(returnStdout: true, script: 'git show-ref --tags --head | sort -V -k2,2 | tail -n2 | head -n1 | cut -d " " -f1').trim()
-                release_message = sh(returnStdout: true, script: """git log --format=%B $previous_release_tag..$current_commit | tr '\n' '\\\\n'""").trim()
+                release_message = sh(returnStdout: true, script: """git log --format=%B $previous_release_tag..$current_commit""").trim()
+
+                def githubJson = JsonOutput.toJson([tag_name: "v"+ release_version, target_commitish: "master", name: release_version, body: release_message, draft: false, prerelease: false])
+
                 //Release on Git
                 println("\n[TRACE] **** Releasing to github ${github_token}, ${release_version}, ${github_commit} ****")
                 sh """#!/bin/bash
-                    C_DATA="{\\\"tag_name\\\": \\\"v${release_version}\\\",\\\"target_commitish\\\": \\\"master\\\",\\\"name\\\": \\\"${release_version}\\\",\\\"body\\\": \\\"${release_message}\\\",\\\"draft\\\": false,\\\"prerelease\\\": false}"
-                    echo "C_DATA: \${C_DATA}"
+                    
+                    echo "sending to github: ${githubJson}"
                     curl -H "Content-Type: application/json" -H "Authorization: token ${
                     github_token
-                }" -X POST -d "\${C_DATA}" https://api.github.com/repos/telegraph/${projectName}/releases
+                }" -X POST -d '${githubJson}' https://api.github.com/repos/telegraph/${projectName}/releases
                 """
             }
         }
