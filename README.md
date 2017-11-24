@@ -50,7 +50,7 @@ The project contains StubTests.scala which offers an example of mocking and test
 
 ### Prime next response
 ```
-    doPost(url+MyStub.PRIMED_RESPONSE_URL+"?"+MyStub.RESPONSE_STATUS_QUERY_PARAM+"=200",  """{"response":"hello"}""")
+    doPost(url+"/primeresponse?"+MyStub.RESPONSE_STATUS_QUERY_PARAM+"=200",  """{"response":"hello"}""")
     
     The next call to this stub will return this request's body and headers and the passed status
     
@@ -61,6 +61,12 @@ The project contains StubTests.scala which offers an example of mocking and test
     The alternative approach to priming is to rely on canned responses from the stub. The canned approach
      would benefit from a documented and distrubuted list of known canned identifiers (users, products etc)
      so that testing can lever consistency between separate stubs.
+     
+    If you just want to tweak the canned response:
+    - make a call to the stub service or access the canned json in the jar
+    - tweak the response payload
+    - prime the next response with the tweaked payload
+    
     
 ```
 
