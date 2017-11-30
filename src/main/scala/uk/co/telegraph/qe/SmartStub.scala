@@ -53,7 +53,12 @@ abstract class SmartStub {
       ContractValidationTransformer,
       PrimedResponseTransformer,
       new ResponseTemplateTransformer(true)))
-    wireMockListener = new SwaggerValidationListener(Source.fromFile(swaggerFile).mkString)
+
+    val swagger = Source.fromFile(swaggerFile).mkString
+    if (swagger==null || swagger.replaceAll("\\s", "").length < 3) {
+      throw new Exception("Swagger file should be present and populated")
+    }
+    wireMockListener = new SwaggerValidationListener(swagger)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
 
     // add mocks
