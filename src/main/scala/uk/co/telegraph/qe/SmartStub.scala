@@ -155,7 +155,7 @@ abstract class SmartStub {
           return Response.Builder.like(myResponse)
             .but()
             .body("Invalid state transition for " + request.getMethod.getName + "for resource " + request.getUrl + " for state transition " + stubPrevState +"->" + parameters.getString(NEXT_STATE_PARAM))
-            .status(500)
+            .status(400)
             .build();
         }
 
@@ -168,7 +168,7 @@ abstract class SmartStub {
           return Response.Builder.like(response)
             .but()
             .body("Invalid contract"+ ex.getLocalizedMessage)
-            .status(500)
+            .status(400)
             .build();
         }
       }

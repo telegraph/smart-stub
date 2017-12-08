@@ -122,7 +122,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i stop it")
         val response = doPost(url, """{"action":"stop"}""")
       Then("it will move")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
     }
@@ -134,7 +134,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i halt it")
         var response = doPost(url, """{"action":"halt"}""")
         Then("it will halted")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
     }
@@ -146,7 +146,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i get it")
         val response = doGet(url)
       Then("it i will get trucks")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
     }
@@ -158,7 +158,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i move it")
         val response = doPost(url, """{"action":"stop","hello":"bye"}""")
       Then("it will move")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
     }
@@ -170,7 +170,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i move it")
         val response = doPost(url, """{"action":"badresponse"}""")
       Then("it will move")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid contract")
     }
@@ -182,7 +182,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       When("when i reverse it")
         val response = doPost(url, """{"action":"reverse"}""")
       Then("it will fail")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid state transition")
     }
@@ -195,7 +195,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"reversing"}""")
         val response = doPost(url, """{"action":"reverse"}""")
       Then("it will fail")
-        response.getStatusLine.getStatusCode should equal (500)
+        response.getStatusLine.getStatusCode should equal (400)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid state transition")
     }
