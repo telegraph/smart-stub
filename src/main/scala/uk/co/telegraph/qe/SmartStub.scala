@@ -32,16 +32,31 @@ abstract class SmartStub {
   private object StubModel {
     var stateModelJson: JValue = null
   }
+  val NEXT_STATE_PARAM = "nextState"
+
+  // Save primed responses
   private object PrimedResponse {
     var primedResponses = new  ListBuffer[com.github.tomakehurst.wiremock.http.Request]()
     var primedResponseStatuses = new  ListBuffer[Int]()
   }
   val PRIMED_RESPONSE_URL = "/primeresponse"
-  val NEXT_STATE_PARAM = "nextState"
   val RESPONSE_STATUS_QUERY_PARAM = "responseStatus"
 
+  // Saved string substitution
+  private object ReplaceResponse {
+    var replaceTarget = ""
+    var replaceWith = ""
+  }
+  val RESPONSE_SUBSTITUTE_STRING_URL = "/substitutestring"
+  val RESPONSE_SUBSTITUTE_TARGET_QUERY_PARAM = "responseTarget"
+  val RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM = "responseWith"
 
-  // configure port, canned responses, swagger, opening state
+
+  /**************************************************************
+    configure port, canned responses, swagger, opening state
+    connect transformers
+   *************************************************************/
+
   def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String): Unit = {
     // port
     var port: Int = 8080
@@ -51,9 +66,10 @@ abstract class SmartStub {
     // attach transformers
     wireMockServer = new WireMockServer(options().port(port).extensions(
       ContractValidationTransformer,
-      PrimedResponseTransformer,
+      MyResponseTransformer,
       new ResponseTemplateTransformer(true)))
 
+    // check valid swagger is present
     val swagger = Source.fromFile(swaggerFile).mkString
     if (swagger==null || swagger.replaceAll("\\s", "").length < 3) {
       throw new Exception("Swagger file should be present and populated")
@@ -61,14 +77,20 @@ abstract class SmartStub {
     wireMockListener = new SwaggerValidationListener(swagger)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
 
-    // add mocks
+    // add mocks including one for the internal resources to prime and substitute
     setUpMocks(cannedResponsesPath)
     wireMockServer.stubFor(post(urlMatching(s".*$PRIMED_RESPONSE_URL.*"))
       .willReturn(
         aResponse()
           .withBody("primed")
           .withStatus(200)));
+    wireMockServer.stubFor(post(urlMatching(s".*$RESPONSE_SUBSTITUTE_STRING_URL.*"))
+      .willReturn(
+        aResponse()
+          .withBody("substituted")
+          .withStatus(200)));
 
+    // store state model
     implicit val formats = DefaultFormats
     StubModel.stateModelJson = parse(Source.fromFile(stateModelFile).mkString) \ "stateTransitions"
     if (StubModel.stateModelJson==null) {
@@ -80,31 +102,39 @@ abstract class SmartStub {
   }
 
 
-  // start server
+  /**************
+    start server
+   **************/
   def start = {
     if (wireMockServer!=null && !wireMockServer.isRunning)
       wireMockServer.start()
   }
 
-  // stop server
+  /**************
+    stop server
+    **************/
   def stop = {
     if (wireMockServer==null)
       throw new Exception("Wiremock server may have found an invalid contract - please check logs")
     wireMockServer.stop
   }
 
-  // method to override to set up mocks
+  /*****************************************
+      method to override to set up mocks
+   ****************************************/
   protected def setUpMocks(cannedResponsesPath: String): Unit
 
 
-  // validate contract swagger and state
+  /****************************************
+     validate contract swagger and state
+    ***************************************/
   private object ContractValidationTransformer extends ResponseTransformer {
 
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
                             files: FileSource, parameters: Parameters): Response = {
 
       // if priming request ignore validation
-      if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
+      if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL) || request.getAbsoluteUrl.contains(RESPONSE_SUBSTITUTE_STRING_URL)) {
         return response
       }
       try {
@@ -123,6 +153,16 @@ abstract class SmartStub {
             response.wasConfigured(), response.getFault, response.isFromProxy)
           PrimedResponse.primedResponses.remove(0)
           PrimedResponse.primedResponseStatuses.remove(0)
+        }
+
+        // check for string replacement
+        if (ReplaceResponse.replaceTarget.length > 0) {
+          myResponse = new Response(
+            myResponse.getStatus,
+            myResponse.getStatusMessage,
+            myResponse.getBodyAsString.replaceAll(ReplaceResponse.replaceTarget, ReplaceResponse.replaceWith),
+            myResponse.getHeaders,
+            myResponse.wasConfigured(), myResponse.getFault, myResponse.isFromProxy)
         }
 
         // validate swagger
@@ -179,13 +219,18 @@ abstract class SmartStub {
 
 
   // prime next response
-  private object PrimedResponseTransformer extends ResponseTransformer {
+  private object MyResponseTransformer extends ResponseTransformer {
 
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
                             files: FileSource, parameters: Parameters): Response = {
 
+      // if replacing string in response
+      if (request.getAbsoluteUrl.contains(RESPONSE_SUBSTITUTE_STRING_URL)) {
+        ReplaceResponse.replaceTarget = request.queryParameter(RESPONSE_SUBSTITUTE_TARGET_QUERY_PARAM).values().get(0).toString
+        ReplaceResponse.replaceWith = request.queryParameter(RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM).values().get(0).toString
+      }
       // if priming save response for later and add mock default
-      if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
+      else if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
         PrimedResponse.primedResponses += request
         PrimedResponse.primedResponseStatuses += request.queryParameter(RESPONSE_STATUS_QUERY_PARAM).values().get(0).toInt
         wireMockServer.stubFor(post(urlMatching(".*"))

@@ -14,6 +14,8 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
   val url = "http://localhost:8089/cars"
   val PRIMED_RESPONSE_URL_QUERY = url+MyStub.PRIMED_RESPONSE_URL+"?"+MyStub.RESPONSE_STATUS_QUERY_PARAM+"=200"
+  val RESPONSE_REPLACE_URL_QUERY = url+MyStub.RESPONSE_SUBSTITUTE_STRING_URL+"?"
+
 
   feature("Basic test scenarios for SmartStub") {
 
@@ -199,6 +201,45 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("Invalid state transition")
     }
+
+    scenario("happy path string substitute") {
+
+      Given("the car is reversing and replace string")
+        doPost(url, """{"action":"stop"}""")
+        doGet(RESPONSE_REPLACE_URL_QUERY+MyStub.RESPONSE_SUBSTITUTE_TARGET_QUERY_PARAM+"=oo&"+MyStub.RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM+"=oooo")
+      When("when i get it")
+        val response =  doPost(url, """{"action":"reverse"}""")
+      Then("it i will get trucks")
+        response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("looook oooout")
+    }
+
+    scenario("happy path string substitute plus prime") {
+
+      Given("the car is reversing and prime response and substitute")
+        doPost(url, """{"action":"stop"}""")
+        doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":"helloo"}""")
+      When("when i get it")
+        val response =  doPost(url, """{"action":"reverse"}""")
+      Then("it i will get trucks")
+        response.getStatusLine.getStatusCode should equal (200)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("helloooo")
+    }
+
+    scenario("happy path string substitute with invalid contract") {
+
+      Given("the car is reversing and replace the 'response' string")
+        doPost(url, """{"action":"stop"}""")
+        doGet(RESPONSE_REPLACE_URL_QUERY+MyStub.RESPONSE_SUBSTITUTE_TARGET_QUERY_PARAM+"=se&"+MyStub.RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM+"=oooo")
+      When("when i get it")
+        val response =  doPost(url, """{"action":"reverse"}""")
+      Then("it i will get trucks")
+        response.getStatusLine.getStatusCode should equal (400)
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include ("Invalid contract")
+    }
   }
 
   def doPost(url:String, body:String): CloseableHttpResponse = {
@@ -238,7 +279,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "reversing")
-            .withBody("""{"response":"look out"}""")
+            .withBody("""{"response":"look oout"}""")
             .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
