@@ -6,11 +6,11 @@ The Smart Stub provides some powerful capabilites:
 * ability to prime responses
 * ability to globally substitute strings in all responses
 
-# Build instructions
+### Build instructions
 
 sbt reload clean assembly   // build and run tests
 
-## Usage
+### Usage
 Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub and then:
 * override setUpMocks() with your stubb mappings
 * add a driver method
@@ -19,7 +19,7 @@ Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub an
 
 
 
-## Example
+### Example
 The project contains StubTests.scala which offers an example of mocking and test using SmartStub.
 
 ### A driver method
@@ -30,7 +30,7 @@ The project contains StubTests.scala which offers an example of mocking and test
       MyStub.start
    }
 ```
-### Wiremock stub methods
+### Wiremock mappings
 ```
     override def setUpMocks(cannedResponsesPath: String): Unit  = {
 
@@ -41,14 +41,13 @@ The project contains StubTests.scala which offers an example of mocking and test
                  .withTransformerParameter("nextState", "moving")
                  .withBody("""{"response":"hello"}""")
                  .withStatus(200)));
-
-        ...
     }
     
+``` 
     The optional withTransformerParameter() method will indicate the state this action should place you in
     If you are not interested in state, use withTransformerParameter("nextState", "any") or omit the line.
     
-```
+
 
 
 ### Prime next response
@@ -81,6 +80,8 @@ The project contains StubTests.scala which offers an example of mocking and test
     simple replaceAll for a given string for all responses. This would be useful, for example, if you want
     to use a username diffferent to the one in the canned response.
 
+        doGet(url+MyStub.RESPONSE_SUBSTITUTE_STRING_URL+"?"+MyStub.RESPONSE_SUBSTITUTE_TARGET_QUERY_PARAM+"=<from>&"+MyStub.RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM+"=<to>")
+    
 
 ### State model
 
