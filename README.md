@@ -1,8 +1,9 @@
-## Smart Stub version 0.9.13
+## Smart Stub version 0.9.15
 
 The Smart Stub provides some powerful capabilites:
 * built-in swagger validation
 * built-in state transition validation
+* build-in sla latency
 * ability to prime responses
 * ability to globally substitute strings in all responses
 
@@ -85,7 +86,7 @@ The project contains StubTests.scala which offers an example of mocking and test
 
 ### State model
 
-The state model json will be of the following format:
+The stateModel.json will be of the following format:
 ```
    {
      "stateTransitions": [
@@ -100,6 +101,23 @@ The state model json will be of the following format:
      ]
    }
 ```
+
+
+### State model
+
+The sla.json be of the following format:
+```
+{  
+  "slaPoints": [
+    {
+      "endpoint": "car",
+      "action": "post",
+      "latency": 1000
+    }
+  ]
+}
+```
+latency is in milliseconds
 ## Errors
 * An invalid request payload will return a 400 with an error and an "Invalid contract" message
 * An invalid response (from the stub) will also result in a 400 with an error and an "Invalid contract" message
