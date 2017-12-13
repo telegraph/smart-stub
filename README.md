@@ -17,6 +17,7 @@ Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub an
 * add a driver method
 * add a swagger json under resources
 * add a state model under resources
+* add a sla confog under resources
 
 
 
@@ -25,11 +26,10 @@ The project contains StubTests.scala which offers an example of mocking and test
 
 ### A driver method
 ```
-   def main(args : Array[String]) {
-      // port, canned responses directory, swagger json file, state model file, opening state
-      MyStub.configureStub(args(0).toInt, args(1), args(2), args(3), "registered")
-      MyStub.start
-   }
+   def configureAndStart(): Unit = {
+        MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
+        MyStub.start
+      }
 ```
 ### Wiremock mappings
 ```
@@ -103,7 +103,7 @@ The stateModel.json will be of the following format:
 ```
 
 
-### State model
+### SLA
 
 The sla.json be of the following format:
 ```
@@ -117,7 +117,8 @@ The sla.json be of the following format:
   ]
 }
 ```
-latency is in milliseconds
+NB. latency is in milliseconds.
+
 ## Errors
 * An invalid request payload will return a 400 with an error and an "Invalid contract" message
 * An invalid response (from the stub) will also result in a 400 with an error and an "Invalid contract" message
