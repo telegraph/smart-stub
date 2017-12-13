@@ -28,11 +28,18 @@ abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
   private var wireMockListener: SwaggerValidationListener = null
+
+  // state
   private var stubPrevState = ""
   private object StubModel {
     var stateModelJson: JValue = null
   }
   val NEXT_STATE_PARAM = "nextState"
+
+  // sla
+  private object Sla {
+    var slaJson: JValue = null
+  }
 
   // Save primed responses
   private object PrimedResponse {
@@ -57,7 +64,7 @@ abstract class SmartStub {
     connect transformers
    *************************************************************/
 
-  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String): Unit = {
+  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String): Unit = {
     // port
     var port: Int = 8080
     if (inputPort != null)
@@ -98,7 +105,13 @@ abstract class SmartStub {
     }
     stubPrevState = openingState
 
-    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile running on port $port in opening state $openingState")
+    // sla
+    Sla.slaJson = parse(Source.fromFile(slaFile).mkString) \ "slaPoints"
+    if (Sla.slaJson==null) {
+      throw new Exception("SLA not in correct format")
+    }
+
+    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile for sla $slaFile running on port $port in opening state $openingState")
   }
 
 
@@ -125,9 +138,9 @@ abstract class SmartStub {
   protected def setUpMocks(cannedResponsesPath: String): Unit
 
 
-  /****************************************
-     validate contract swagger and state
-    ***************************************/
+  /*******************************************************
+     validate contract swagger and state and apply latency
+    ******************************************************/
   private object ContractValidationTransformer extends ResponseTransformer {
 
     override def transform (request: com.github.tomakehurst.wiremock.http.Request, response: Response,
@@ -169,8 +182,8 @@ abstract class SmartStub {
         wireMockListener.requestReceived(request, myResponse)
         wireMockListener.assertValidationPassed() // will throw error
 
-        var stateTransitionIsValid=false
         // validate state transition if required
+        var stateTransitionIsValid=false
 
         if (parameters==null || parameters.containsKey(NEXT_STATE_PARAM)==false || parameters.getString(NEXT_STATE_PARAM)=="any") {
           stateTransitionIsValid=true
@@ -198,6 +211,22 @@ abstract class SmartStub {
             .status(400)
             .build();
         }
+
+        // add latency
+        for {
+          JObject(rec) <- Sla.slaJson
+          JField("endpoint", JString(endpoint)) <- rec
+          JField("action", JString(action)) <- rec
+          JField("latency", JInt(latency)) <- rec
+        } {
+
+          if (endpoint == null || action == null || latency==null) {
+            throw new Exception("SLA not in correct format")
+          }
+          // apply latency if needed
+          if (request.getAbsoluteUrl.toUpperCase.contains(endpoint.toUpperCase) && request.getMethod.getName.toUpperCase.contains(action.toUpperCase) )
+           Thread.sleep(latency.toInt)
+          }
 
         // otherwise just act as if nothing happened
         return myResponse

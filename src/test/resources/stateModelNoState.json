@@ -1,0 +1,8 @@
+{
+  "stateTransitions": [
+    {
+      "prestate": "any",
+      "poststate": "any"
+    }
+  ]
+}

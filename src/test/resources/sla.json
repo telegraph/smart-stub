@@ -1,0 +1,14 @@
+{
+  "slaPoints": [
+    {
+      "endpoint": "car",
+      "action": "get",
+      "latency": 500
+    },
+    {
+      "endpoint": "car",
+      "action": "post",
+      "latency": 1000
+    }
+  ]
+}

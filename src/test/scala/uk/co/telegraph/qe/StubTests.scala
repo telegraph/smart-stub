@@ -1,6 +1,8 @@
 package uk.co.telegraph.qe
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, get}
+import java.util.Calendar
+
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, get, post, urlMatching}
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
 import org.apache.http.client.methods.{CloseableHttpResponse, HttpGet, HttpPost}
 import org.apache.http.entity.StringEntity
@@ -23,28 +25,34 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     info("I want to be able to use the car")
     info("So that I can get from a to b")
 
-    scenario("happy GET with canned response") {
+    scenario("happy GET with canned response with 1 sec latency") {
 
       Given("the car is idle")
         MyStub.configureAndStart()
       When("when i get it")
-         val response = doGet(url)
+        val now = Calendar.getInstance()
+        val response = doGet(url)
       Then("it will return the canned data")
         response.getStatusLine.getStatusCode should equal (200)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("cars")
+        Calendar.getInstance().getTimeInMillis should be >= (now.getTimeInMillis+500)
+        Calendar.getInstance().getTimeInMillis should not be >= (now.getTimeInMillis+2000)
     }
 
-    scenario("happy POST path with canned response") {
+    scenario("happy POST path with canned response with 2 sec latency") {
 
       Given("the car is idle")
         // already
       When("when i move it")
+        val now = Calendar.getInstance()
         val response = doPost(url, """{"action":"drive"}""")
       Then("it will move")
         response.getStatusLine.getStatusCode should equal (200)
         val responsePayloadString = EntityUtils.toString(response.getEntity)
         responsePayloadString should include ("moving")
+        Calendar.getInstance().getTimeInMillis should be >= (now.getTimeInMillis+1000)
+        Calendar.getInstance().getTimeInMillis should not be >= (now.getTimeInMillis+3000)
     }
 
     scenario("good state transition") {
@@ -300,7 +308,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
 
     def configureAndStart(): Unit = {
-      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle")
+      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
       MyStub.start
     }
   }
