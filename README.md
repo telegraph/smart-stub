@@ -17,7 +17,7 @@ Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub an
 * add a driver method
 * add a swagger json under resources
 * add a state model under resources
-* add a sla confog under resources
+* add an sla config under resources
 
 
 
@@ -101,7 +101,9 @@ The stateModel.json will be of the following format:
      ]
    }
 ```
-
+If you don't want any state you can set-up the model with:  
+    "prestate": "any",
+    "poststate": "any"
 
 ### SLA
 
@@ -117,6 +119,8 @@ The sla.json be of the following format:
   ]
 }
 ```
+If you don't want any sla you can set-up the model with no endpoint data. 
+ 
 NB. latency is in milliseconds.
 
 ## Errors
