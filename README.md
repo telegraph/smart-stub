@@ -3,7 +3,7 @@
 The Smart Stub provides some powerful capabilites:
 * built-in swagger validation
 * built-in state transition validation
-* build-in sla latency
+* built-in sla latency
 * ability to prime responses
 * ability to globally substitute strings in all responses
 
