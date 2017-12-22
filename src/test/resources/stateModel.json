@@ -15,6 +15,10 @@
     {
       "prestate": "reversing",
       "poststate": "idle"
+    },
+    {
+      "prestate": "any",
+      "poststate": "deleted"
     }
   ]
 }

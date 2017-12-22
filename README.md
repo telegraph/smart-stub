@@ -1,4 +1,4 @@
-## Smart Stub version 0.9.15
+## Smart Stub version 0.9.16
 
 The Smart Stub provides some powerful capabilites:
 * built-in swagger validation

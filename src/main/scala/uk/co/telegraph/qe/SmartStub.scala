@@ -3,7 +3,7 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, delete, equalToJson, get, post, put, urlMatching}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, any, anyUrl}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
@@ -262,17 +262,10 @@ abstract class SmartStub {
       else if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
         PrimedResponse.primedResponses += request
         PrimedResponse.primedResponseStatuses += request.queryParameter(RESPONSE_STATUS_QUERY_PARAM).values().get(0).toInt
-        wireMockServer.stubFor(post(urlMatching(".*"))
+
+        // Need placeholder so response can be replaced
+        wireMockServer.stubFor(any(anyUrl())
             .atPriority(1000).willReturn(aResponse()))
-
-        wireMockServer.stubFor(get(urlMatching(".*"))
-          .atPriority(1001).willReturn(aResponse()))
-
-        wireMockServer.stubFor(put(urlMatching(".*"))
-          .atPriority(1002).willReturn(aResponse()))
-
-        wireMockServer.stubFor(delete(urlMatching(".*"))
-          .atPriority(1003).willReturn(aResponse()))
       }
       return response
     }
