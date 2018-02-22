@@ -1,4 +1,4 @@
-## Smart Stub version 0.9.16
+## Smart Stub version 0.9.18
 
 The Smart Stub provides some powerful capabilites:
 * built-in swagger validation
@@ -16,20 +16,25 @@ Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub an
 * override setUpMocks() with your stubb mappings
 * add a driver method
 * add a swagger json under resources
-* add a state model under resources
-* add an sla config under resources
+* add a state model under resources (optional)
+* add an sla config under resources (optional)
 
 
 
 ### Example
 The project contains StubTests.scala which offers an example of mocking and test using SmartStub.
 
-### A driver method
+### A driver method with and without state and sla
 ```
    def configureAndStart(): Unit = {
         MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
         MyStub.start
       }
+    
+    def configureAndStart(): Unit = {   
+         MyStub.configureStub("8089", null, "src/test/resources/openApi.json", null, null, null)
+         MyStub.start
+      }  
 ```
 ### Wiremock mappings
 ```
@@ -48,7 +53,7 @@ The project contains StubTests.scala which offers an example of mocking and test
     The optional withTransformerParameter() method will indicate the state this action should place you in
     If you are not interested in state, use withTransformerParameter("nextState", "any") or omit the line.
     
-
+    The mappings can be added on the fly by the tests.
 
 
 ### Prime next response

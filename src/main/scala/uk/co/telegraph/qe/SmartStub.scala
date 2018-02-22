@@ -98,17 +98,21 @@ abstract class SmartStub {
           .withStatus(200)));
 
     // store state model
-    implicit val formats = DefaultFormats
-    StubModel.stateModelJson = parse(Source.fromFile(stateModelFile).mkString) \ "stateTransitions"
-    if (StubModel.stateModelJson==null) {
-      throw new Exception("State model not in correct format")
+    if (stateModelFile!=null) {
+      implicit val formats = DefaultFormats
+      StubModel.stateModelJson = parse(Source.fromFile(stateModelFile).mkString) \ "stateTransitions"
+      if (StubModel.stateModelJson == null) {
+        throw new Exception("State model not in correct format")
+      }
+      stubPrevState = openingState
     }
-    stubPrevState = openingState
 
     // sla
-    Sla.slaJson = parse(Source.fromFile(slaFile).mkString) \ "slaPoints"
-    if (Sla.slaJson==null) {
-      throw new Exception("SLA not in correct format")
+    if (slaFile!=null) {
+      Sla.slaJson = parse(Source.fromFile(slaFile).mkString) \ "slaPoints"
+      if (Sla.slaJson == null) {
+        throw new Exception("SLA not in correct format")
+      }
     }
 
     println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile for sla $slaFile running on port $port in opening state $openingState")

@@ -2,12 +2,13 @@ package uk.co.telegraph.qe
 
 import java.util.Calendar
 
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, get, post, urlMatching, delete, put}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, delete, equalToJson, get, post, put, urlMatching}
 import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
-import org.apache.http.client.methods.{CloseableHttpResponse, HttpGet, HttpPost, HttpPut, HttpDelete}
+import org.apache.http.client.methods.{CloseableHttpResponse, HttpDelete, HttpGet, HttpPost, HttpPut}
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.{CloseableHttpClient, DefaultHttpClient}
 import org.apache.http.util.EntityUtils
+import uk.co.telegraph.qe.MyStub.wireMockServer
 
 /**
   * Created by toorap on 12/09/2017.
@@ -20,6 +21,55 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
   val PRIMED_RESPONSE_URL_QUERY_PUT = PRIMED_RESPONSE_URL_QUERY.replace("=200","=201")
   val RESPONSE_REPLACE_URL_QUERY = url+MyStub.RESPONSE_SUBSTITUTE_STRING_URL+"?"
 
+  feature("Happy GET scenarios wth only Swagger and dynamic mock") {
+
+    info("As a smart stub user")
+    info("I want to be able to get")
+    info("So that I can get test functionally")
+
+    scenario("happy GET with canned response") {
+
+      Given("the stub has started and the car is idle and I've added the mock on the fly")
+
+        MyStub.configureAndStartWithOnlySwagger()
+        MyStub.wireMockServer.stubFor(get(urlMatching(".*/cars"))
+        .willReturn(
+          aResponse()
+            .withBody("""{"response":"lorries"}""")
+            .withStatus(200)));
+
+      When("when i get it")
+
+        val now = Calendar.getInstance()
+        val response = doGet(url)
+
+      Then("it will return the canned data")
+
+        val responsePayloadString = EntityUtils.toString(response.getEntity)
+        responsePayloadString should include("lorries")
+    }
+
+    scenario("sad path with primed response where response body not valid in swagger") {
+
+      Given("the car is moving")
+
+      doPost(url, """{"action":"stop"}""")
+      doPost(url, """{"action":"drive"}""")
+      doPost(PRIMED_RESPONSE_URL_QUERY,  """{"response":false}""")
+
+      When("when i stop it")
+
+      val response = doPost(url, """{"action":"stop"}""")
+
+      Then("it will move")
+
+      response.getStatusLine.getStatusCode should equal (400)
+      val responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include ("Invalid contract")
+
+      MyStub.stop
+    }
+  }
 
   feature("Happy GET scenarios") {
 
@@ -453,6 +503,11 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
     def configureAndStart(): Unit = {
       MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
+      MyStub.start
+    }
+
+    def configureAndStartWithOnlySwagger(): Unit = {
+      MyStub.configureStub("8089", null, "src/test/resources/openApi.json", null, null, null)
       MyStub.start
     }
   }
