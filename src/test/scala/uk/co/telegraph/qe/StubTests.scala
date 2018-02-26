@@ -502,7 +502,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
 
     def configureAndStart(): Unit = {
-      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.json", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
+      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.yaml", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
       MyStub.start
     }
 

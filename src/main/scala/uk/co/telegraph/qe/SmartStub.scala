@@ -77,10 +77,13 @@ abstract class SmartStub {
       new ResponseTemplateTransformer(true)))
 
     // check valid swagger is present
-    val swagger = Source.fromFile(swaggerFile).mkString
+    var swagger = Source.fromFile(swaggerFile).mkString
     if (swagger==null || swagger.replaceAll("\\s", "").length < 3) {
       throw new Exception("Swagger file should be present and populated")
     }
+    if (swaggerFile.endsWith(".yaml") || swaggerFile.endsWith(".yml") )
+      swagger = convertYamlToJson(swagger)
+
     wireMockListener = new SwaggerValidationListener(swagger)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
 
@@ -275,6 +278,17 @@ abstract class SmartStub {
     }
 
     override def getName: String = "response"
+  }
+
+
+  import com.fasterxml.jackson.databind.ObjectMapper
+  import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+
+  def convertYamlToJson(yaml: String): String = {
+    val yamlReader = new ObjectMapper(new YAMLFactory)
+    val obj = yamlReader.readValue(yaml, classOf[Any])
+    val jsonWriter = new ObjectMapper
+    jsonWriter.writeValueAsString(obj)
   }
 
 }

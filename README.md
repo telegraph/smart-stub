@@ -15,7 +15,7 @@ sbt reload clean assembly   // build and run tests
 Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub and then:
 * override setUpMocks() with your stubb mappings
 * add a driver method
-* add a swagger json under resources
+* add a swagger json or yaml under resources
 * add a state model under resources (optional)
 * add an sla config under resources (optional)
 
