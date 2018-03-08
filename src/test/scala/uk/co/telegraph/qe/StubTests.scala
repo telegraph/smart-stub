@@ -40,13 +40,13 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
       When("when i get it")
 
-        val now = Calendar.getInstance()
-        val response = doGet(url)
+      val now = Calendar.getInstance()
+      val response = doGet(url)
 
       Then("it will return the canned data")
 
-        val responsePayloadString = EntityUtils.toString(response.getEntity)
-        responsePayloadString should include("lorries")
+      val responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include("lorries")
     }
 
     scenario("sad path with primed response where response body not valid in swagger") {
@@ -71,7 +71,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
   }
 
-  feature("Happy GET scenarios") {
+  feature("Happy GET scenarios using static mock with in-code and mapping files") {
 
     info("As a smart stub user")
     info("I want to be able to get")
@@ -88,7 +88,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
       val now = Calendar.getInstance()
       val response = doGet(url)
 
-      Then("it will return the canned data with a 1 sec delay")
+      Then("it will return the canned data from the mapping file with a 1 sec delay")
 
       response.getStatusLine.getStatusCode should equal(200)
       val responsePayloadString = EntityUtils.toString(response.getEntity)
@@ -454,12 +454,6 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
   object MyStub extends SmartStub {
 
     override def setUpMocks(cannedResponsesPath: String): Unit  = {
-
-      wireMockServer.stubFor(get(urlMatching(".*/cars"))
-        .willReturn(
-          aResponse()
-            .withBody("""{"response":"cars"}""")
-            .withStatus(200)));
 
       wireMockServer.stubFor(post(urlMatching(".*/cars"))
         .withRequestBody(equalToJson("{\"action\":\"drive\"}",true,true))
