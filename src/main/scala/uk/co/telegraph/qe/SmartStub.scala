@@ -59,19 +59,28 @@ abstract class SmartStub {
   val RESPONSE_SUBSTITUTE_WITH_QUERY_PARAM = "responseWith"
 
 
-  /**************************************************************
-    configure port, canned responses, swagger, opening state
+  /*********************************************************************************
+    configure port, canned responses, swagger, stateModel, opening state, mappings file location
     connect transformers
-   *************************************************************/
+   ********************************************************************************/
 
-  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String): Unit = {
+  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String, mappingsFile:String): Unit = {
     // port
     var port: Int = 8080
     if (inputPort != null)
       port = inputPort.toInt
 
+    // mappings file location
+    var mappingsFileLocation=mappingsFile
+    if (mappingsFileLocation==null) {
+      mappingsFileLocation="src/test/resources"
+    }
+
     // attach transformers
-    wireMockServer = new WireMockServer(options().port(port).extensions(
+    wireMockServer = new WireMockServer(options()
+      .port(port)
+        .usingFilesUnderDirectory(mappingsFileLocation)
+      .extensions(
       ContractValidationTransformer,
       MyResponseTransformer,
       new ResponseTemplateTransformer(true)))
@@ -119,6 +128,15 @@ abstract class SmartStub {
     }
 
     println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile for sla $slaFile running on port $port in opening state $openingState")
+  }
+
+  /**************************************************************
+    configure port,  swagger, and mappings file location
+    connect transformers
+    *************************************************************/
+
+  def configureStubWithOnlySwaggerAndMappings(inputPort: String, swaggerFile:String, mappingsFile:String): Unit = {
+    configureStub(inputPort, null, swaggerFile,null,null,null,mappingsFile)
   }
 
 

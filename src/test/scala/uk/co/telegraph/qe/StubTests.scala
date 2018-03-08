@@ -31,7 +31,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
       Given("the stub has started and the car is idle and I've added the mock on the fly")
 
-        MyStub.configureAndStartWithOnlySwagger()
+        MyStub.configureAndStartWithOnlySwaggerAndMappings()
         MyStub.wireMockServer.stubFor(get(urlMatching(".*/cars"))
         .willReturn(
           aResponse()
@@ -496,12 +496,12 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
 
     def configureAndStart(): Unit = {
-      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.yaml", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json")
+      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.yaml", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json", null)
       MyStub.start
     }
 
-    def configureAndStartWithOnlySwagger(): Unit = {
-      MyStub.configureStub("8089", null, "src/test/resources/openApi.json", null, null, null)
+    def configureAndStartWithOnlySwaggerAndMappings(): Unit = {
+      MyStub.configureStubWithOnlySwaggerAndMappings("8089", "src/test/resources/openApi.json", "src/test/resources")
       MyStub.start
     }
   }
