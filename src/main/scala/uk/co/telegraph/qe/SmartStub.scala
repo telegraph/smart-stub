@@ -127,7 +127,7 @@ abstract class SmartStub {
       }
     }
 
-    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile for sla $slaFile running on port $port in opening state $openingState")
+    println(s"Stub configured for swagger api $swaggerFile for state model $stateModelFile for sla $slaFile running on port $port in opening state $openingState with mappings at $mappingsFileLocation")
   }
 
   /**************************************************************
