@@ -10,7 +10,7 @@ lazy val root = (project in file(".")).
     name := "SmartStub",
     libraryDependencies ++= Seq(
       "com.github.tomakehurst" % "wiremock" % "2.7.1",
-      "com.atlassian.oai" % "swagger-request-validator-wiremock" % "1.2.1",
+      "com.atlassian.oai" % "swagger-request-validator-wiremock" % "1.3.9",
       "org.json4s" %% "json4s-jackson" % "3.5.3",
       "org.scalatest" %% "scalatest" % "3.0.1" % "test"
     ),
