@@ -3,7 +3,7 @@ package uk.co.telegraph.qe
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, equalToJson, post, urlMatching, any, anyUrl}
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, anyUrl, equalToJson, post, urlMatching}
 import com.github.tomakehurst.wiremock.common.FileSource
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
@@ -14,6 +14,8 @@ import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import scala.util.Random
+import util.control.Breaks._
 
 /**
   * @author ${parsh.toora}
@@ -139,6 +141,15 @@ abstract class SmartStub {
     configureStub(inputPort, null, swaggerFile,null,null,null,mappingsFile)
   }
 
+  /**************************************************************
+    configure port,  swagger, and mappings file location and slaFile
+    connect transformers
+    *************************************************************/
+
+  def configureStubWithOnlySwaggerAndMappingsAndSla(inputPort: String, swaggerFile:String, mappingsFile:String, slaFile:String): Unit = {
+    configureStub(inputPort, null, swaggerFile,null,null,slaFile,mappingsFile)
+  }
+
 
   /**************
     start server
@@ -242,16 +253,32 @@ abstract class SmartStub {
           JObject(rec) <- Sla.slaJson
           JField("endpoint", JString(endpoint)) <- rec
           JField("action", JString(action)) <- rec
-          JField("latency", JInt(latency)) <- rec
+          JField("latency", JString(latencyString)) <- rec
         } {
 
-          if (endpoint == null || action == null || latency==null) {
+          if (endpoint == null || action == null || latencyString == null) {
             throw new Exception("SLA not in correct format")
           }
           // apply latency if needed
-          if (request.getAbsoluteUrl.toUpperCase.contains(endpoint.toUpperCase) && request.getMethod.getName.toUpperCase.contains(action.toUpperCase) )
-           Thread.sleep(latency.toInt)
+          if (request.getAbsoluteUrl.toUpperCase.contains(endpoint.toUpperCase) && request.getMethod.getName.toUpperCase.contains(action.toUpperCase)) {
+            val latencies = latencyString.split(",")
+            var latencyPercentageGap = 100
+            var latencyMatchFound = false
+            for (latency <- latencies) {
+              if (!latencyMatchFound) {
+                val delay = latency.split(":")(0).toInt
+                val percentage = latency.split(":")(1).toInt
+                val random = (new Random().nextInt(latencyPercentageGap))+1 // +1 so it is 1-100
+                if (random <= percentage) {
+                  Thread.sleep(delay.toInt)
+                  latencyMatchFound =true
+                } else {
+                  latencyPercentageGap = latencyPercentageGap - percentage
+                }
+              }
+            }
           }
+        }
 
         // otherwise just act as if nothing happened
         return myResponse

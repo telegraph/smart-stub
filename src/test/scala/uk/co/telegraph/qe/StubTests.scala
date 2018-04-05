@@ -71,6 +71,38 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
   }
 
+  feature("Happy GET scenarios wth only Swagger and dynamic mock and a slow sla file") {
+
+    info("As a smart stub user")
+    info("I want to be able to get")
+    info("So that I can get test functionally")
+
+    scenario("happy GET with canned response") {
+
+      Given("the stub has started and the car is idle and I've added the mock on the fly")
+
+      MyStub.configureAndStartWithOnlySwaggerAndMappingsAndSla()
+      MyStub.wireMockServer.stubFor(get(urlMatching(".*/cars"))
+        .willReturn(
+          aResponse()
+            .withBody("""{"response":"lorries"}""")
+            .withStatus(200)));
+
+      When("when i get it")
+
+      val now = Calendar.getInstance()
+      val response = doGet(url)
+
+      Then("it will return the canned data")
+
+      val responsePayloadString = EntityUtils.toString(response.getEntity)
+      responsePayloadString should include("lorries")
+      Calendar.getInstance().getTimeInMillis should be >= (now.getTimeInMillis + 500)
+      Calendar.getInstance().getTimeInMillis should not be >=(now.getTimeInMillis + 7000)
+      MyStub.stop
+    }
+  }
+
   feature("Happy GET scenarios using static mock with in-code and mapping files") {
 
     info("As a smart stub user")
@@ -502,6 +534,11 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
 
     def configureAndStartWithOnlySwaggerAndMappings(): Unit = {
       MyStub.configureStubWithOnlySwaggerAndMappings("8089", "src/test/resources/openApi.json", "src/test/resources")
+      MyStub.start
+    }
+
+    def configureAndStartWithOnlySwaggerAndMappingsAndSla(): Unit = {
+      MyStub.configureStubWithOnlySwaggerAndMappingsAndSla("8089", "src/test/resources/openApi.json", "src/test/resources", "src/test/resources/slaSlow.json")
       MyStub.start
     }
   }

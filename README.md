@@ -1,4 +1,4 @@
-## Smart Stub version 0.9.18
+## Smart Stub version 0.10.3
 
 The Smart Stub provides some powerful capabilites:
 * built-in swagger validation
@@ -10,6 +10,7 @@ The Smart Stub provides some powerful capabilites:
 ### Build instructions
 
 sbt reload clean assembly   // build and run tests
+sbt publish                 // push the jar to s3
 
 ### Usage
 Engineers should create an Object (e.g. MyStub.scala) which extends SmartStub and then:
@@ -119,11 +120,12 @@ The sla.json be of the following format:
     {
       "endpoint": "car",
       "action": "post",
-      "latency": 1000
+      "latency": "1000:80,5000:20"
     }
   ]
 }
 ```
+Latency is of the format of a list of delay:percentage
 If you don't want any sla you can set-up the model with no endpoint data. 
  
 NB. latency is in milliseconds.

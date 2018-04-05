@@ -3,12 +3,12 @@
     {
       "endpoint": "car",
       "action": "get",
-      "latency": 500
+      "latency": "500:100"
     },
     {
       "endpoint": "car",
       "action": "post",
-      "latency": 1000
+      "latency": "1000:100"
     }
   ]
 }
