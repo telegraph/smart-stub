@@ -1,21 +1,20 @@
 package uk.co.telegraph.qe
 
+import com.atlassian.oai.validator.OpenApiInteractionValidator
+import com.atlassian.oai.validator.wiremock.OpenApiValidationListener
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
-import com.atlassian.oai.validator.wiremock.SwaggerValidationListener
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, any, anyUrl, equalToJson, post, urlMatching}
+import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.common.FileSource
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer
 import com.github.tomakehurst.wiremock.extension.{Parameters, ResponseTransformer}
-import com.github.tomakehurst.wiremock.http.{Fault, HttpHeaders, Request, Response}
-import com.github.tomakehurst.wiremock.stubbing.Scenario
-import org.json4s.{JValue, _}
+import com.github.tomakehurst.wiremock.http.{HttpHeaders, Response}
 import org.json4s.jackson.JsonMethods._
+import org.json4s.{JValue, _}
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Random
-import util.control.Breaks._
 
 /**
   * @author ${parsh.toora}
@@ -29,7 +28,7 @@ import util.control.Breaks._
 abstract class SmartStub {
 
   var wireMockServer: WireMockServer = null;
-  private var wireMockListener: SwaggerValidationListener = null
+  private var wireMockListener: OpenApiValidationListener = null
 
   // state
   private var stubPrevState = ""
@@ -45,7 +44,10 @@ abstract class SmartStub {
 
   // Save primed responses
   private object PrimedResponse {
-    var primedResponses = new  ListBuffer[com.github.tomakehurst.wiremock.http.Request]()
+
+    case class ResponseValue(body: String, headers: HttpHeaders)
+
+    var primedResponses = new  ListBuffer[ResponseValue]()
     var primedResponseStatuses = new  ListBuffer[Int]()
   }
   val PRIMED_RESPONSE_URL = "/primeresponse"
@@ -66,7 +68,7 @@ abstract class SmartStub {
     connect transformers
    ********************************************************************************/
 
-  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String, mappingsFile:String): Unit = {
+  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String, mappingsFile:String, authorization: String = ""): Unit = {
     // port
     var port: Int = 8080
     if (inputPort != null)
@@ -87,15 +89,9 @@ abstract class SmartStub {
       MyResponseTransformer,
       new ResponseTemplateTransformer(true)))
 
-    // check valid swagger is present
-    var swagger = Source.fromFile(swaggerFile).mkString
-    if (swagger==null || swagger.replaceAll("\\s", "").length < 3) {
-      throw new Exception("Swagger file should be present and populated")
-    }
-    if (swaggerFile.endsWith(".yaml") || swaggerFile.endsWith(".yml") )
-      swagger = convertYamlToJson(swagger)
+    val validator = OpenApiInteractionValidator.createFor(swaggerFile).withAuthHeaderData("Authorization", authorization).build
+    wireMockListener = new OpenApiValidationListener(validator)
 
-    wireMockListener = new SwaggerValidationListener(swagger)
     wireMockServer.addMockServiceRequestListener(wireMockListener)
 
     // add mocks including one for the internal resources to prime and substitute
@@ -137,8 +133,8 @@ abstract class SmartStub {
     connect transformers
     *************************************************************/
 
-  def configureStubWithOnlySwaggerAndMappings(inputPort: String, swaggerFile:String, mappingsFile:String): Unit = {
-    configureStub(inputPort, null, swaggerFile,null,null,null,mappingsFile)
+  def configureStubWithOnlySwaggerAndMappings(inputPort: String, swaggerFile:String, mappingsFile:String, authorization: String = ""): Unit = {
+    configureStub(inputPort, null, swaggerFile,null,null,null,mappingsFile, authorization)
   }
 
   /**************************************************************
@@ -146,8 +142,8 @@ abstract class SmartStub {
     connect transformers
     *************************************************************/
 
-  def configureStubWithOnlySwaggerAndMappingsAndSla(inputPort: String, swaggerFile:String, mappingsFile:String, slaFile:String): Unit = {
-    configureStub(inputPort, null, swaggerFile,null,null,slaFile,mappingsFile)
+  def configureStubWithOnlySwaggerAndMappingsAndSla(inputPort: String, swaggerFile:String, mappingsFile:String, slaFile:String, authorization: String = ""): Unit = {
+    configureStub(inputPort, null, swaggerFile,null,null,slaFile,mappingsFile, authorization)
   }
 
 
@@ -197,9 +193,9 @@ abstract class SmartStub {
           myResponse = new Response(
             PrimedResponse.primedResponseStatuses.head,
             response.getStatusMessage,
-            PrimedResponse.primedResponses.head.getBodyAsString,
-            PrimedResponse.primedResponses.head.getHeaders,
-            response.wasConfigured(), response.getFault, response.isFromProxy)
+            PrimedResponse.primedResponses.head.body,
+            PrimedResponse.primedResponses.head.headers,
+            response.wasConfigured(), response.getFault, 0, null, response.isFromProxy)
           PrimedResponse.primedResponses.remove(0)
           PrimedResponse.primedResponseStatuses.remove(0)
         }
@@ -211,7 +207,7 @@ abstract class SmartStub {
             myResponse.getStatusMessage,
             myResponse.getBodyAsString.replaceAll(ReplaceResponse.replaceTarget, ReplaceResponse.replaceWith),
             myResponse.getHeaders,
-            myResponse.wasConfigured(), myResponse.getFault, myResponse.isFromProxy)
+            myResponse.wasConfigured(), myResponse.getFault, 0, null, myResponse.isFromProxy)
         }
 
         // validate swagger
@@ -312,7 +308,7 @@ abstract class SmartStub {
       }
       // if priming save response for later and add mock default
       else if (request.getAbsoluteUrl.contains(PRIMED_RESPONSE_URL)) {
-        PrimedResponse.primedResponses += request
+        PrimedResponse.primedResponses += PrimedResponse.ResponseValue(request.getBodyAsString, request.getHeaders)
         PrimedResponse.primedResponseStatuses += request.queryParameter(RESPONSE_STATUS_QUERY_PARAM).values().get(0).toInt
 
         // Need placeholder so response can be replaced
@@ -324,17 +320,5 @@ abstract class SmartStub {
 
     override def getName: String = "response"
   }
-
-
-  import com.fasterxml.jackson.databind.ObjectMapper
-  import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-
-  def convertYamlToJson(yaml: String): String = {
-    val yamlReader = new ObjectMapper(new YAMLFactory)
-    val obj = yamlReader.readValue(yaml, classOf[Any])
-    val jsonWriter = new ObjectMapper
-    jsonWriter.writeValueAsString(obj)
-  }
-
 }
 

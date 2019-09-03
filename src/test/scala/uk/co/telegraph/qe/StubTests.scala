@@ -492,6 +492,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "moving")
+            .withHeader("Content-Type", "application/json")
             .withBody("""{"response":"moving"}""")
             .withStatus(200)));
 
@@ -500,6 +501,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "reversing")
+            .withHeader("Content-Type", "application/json")
             .withBody("""{"response":"look oout"}""")
             .withStatus(200)));
 
@@ -508,6 +510,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "idle")
+            .withHeader("Content-Type", "application/json")
             .withBody("""{"response":"breaking"}""")
             .withStatus(200)));
 
@@ -516,6 +519,7 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
         .willReturn(
           aResponse()
             .withTransformerParameter("nextState", "any")
+            .withHeader("Content-Type", "application/json")
             .withBody("""{"response":false}""")
             .withStatus(200)));
 
@@ -528,17 +532,17 @@ class StubTests extends FeatureSpec with GivenWhenThen with Matchers {
     }
 
     def configureAndStart(): Unit = {
-      MyStub.configureStub("8089", "src/test/resources/", "src/test/resources/openApi.yaml", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json", null)
+      MyStub.configureStub("8089", "src/test/resources/", "/openApi.yaml", "src/test/resources/stateModel.json", "idle", "src/test/resources/sla.json", null)
       MyStub.start
     }
 
     def configureAndStartWithOnlySwaggerAndMappings(): Unit = {
-      MyStub.configureStubWithOnlySwaggerAndMappings("8089", "src/test/resources/openApi.json", "src/test/resources")
+      MyStub.configureStubWithOnlySwaggerAndMappings("8089", "/openApi.json", "src/test/resources")
       MyStub.start
     }
 
     def configureAndStartWithOnlySwaggerAndMappingsAndSla(): Unit = {
-      MyStub.configureStubWithOnlySwaggerAndMappingsAndSla("8089", "src/test/resources/openApi.json", "src/test/resources", "src/test/resources/slaSlow.json")
+      MyStub.configureStubWithOnlySwaggerAndMappingsAndSla("8089", "/openApi.json", "src/test/resources", "src/test/resources/slaSlow.json")
       MyStub.start
     }
   }
