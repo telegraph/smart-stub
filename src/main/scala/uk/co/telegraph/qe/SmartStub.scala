@@ -67,6 +67,10 @@ abstract class SmartStub {
     configure port, canned responses, swagger, stateModel, opening state, mappings file location
     connect transformers
    ********************************************************************************/
+  def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String, mappingsFile:String): Unit ={
+    configureStub(inputPort, cannedResponsesPath, swaggerFile, stateModelFile, openingState, slaFile, mappingsFile, "");
+  }
+
 
   def configureStub(inputPort: String, cannedResponsesPath: String, swaggerFile:String, stateModelFile:String, openingState:String, slaFile:String, mappingsFile:String, authorization: String = ""): Unit = {
     // port
